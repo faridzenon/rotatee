@@ -1,0 +1,4862 @@
+
+//----------------------------------------------------------------------
+//Symbol 41 MovieClip [__Packages.HLCStyle] Frame 0
+//----------------------------------------------------------------------
+    class HLCStyle extends BarStyle
+    {
+        var name, links, alpha, colour, key, font_size, values, bar_mcs, ExPoints;
+        function HLCStyle (lv, name) {
+            super();
+            this.name = "hlc" + name;
+            parse_bar(lv[this.name]);
+            links = new Array();
+        }
+        function parse_bar(val) {
+            var _local3 = val.split(",");
+            alpha = Number(_local3[0]);
+            line_width = Number(_local3[1]);
+            colour = _root.get_colour(_local3[2]);
+            if (_local3.length > 3) {
+                key = _local3[3];
+            }
+            if (_local3.length > 4) {
+                font_size = Number(_local3[4]);
+            }
+        }
+        function parse_group(g) {
+            var _local2 = g.split(",");
+            values.push({high:Number(_local2[0]), low:Number(_local2[1]), close:Number(_local2[2])});
+        }
+        function groups(vals) {
+            var _local5 = new Array();
+            var _local2 = "";
+            var _local3 = false;
+            var _local1 = 0;
+            while (_local1 < vals.length) {
+                switch (vals.charAt(_local1)) {
+                    case "[" : 
+                        _local3 = true;
+                        break;
+                    case "]" : 
+                        _local3 = false;
+                        _local5.push(_local2);
+                        _local2 = "";
+                        break;
+                    default : 
+                        if (!_local3) { 
+                            break;
+                        }
+                        _local2 = _local2 + vals.charAt(_local1);
+                }
+                _local1++;
+            }
+            return(_local5);
+        }
+        function set_values(v, labels, links) {
+            values = new Array();
+            if (links != undefined) {
+                this.links = links.split(",");
+            }
+            var _local6 = groups(v);
+            var _local4 = 0;
+            while (_local4 < _local6.length) {
+                parse_group(_local6[_local4]);
+                _local4++;
+            }
+            bar_mcs = new Array(values.length);
+            _local4 = 0;
+            while (_local4 < values.length) {
+                var _local3 = _root.createEmptyMovieClip((name + "_") + _local4, _root.getNextHighestDepth());
+                _local3.onRollOver = _root.FadeIn2;
+                _local3.onRollOut = _root.FadeOut;
+                if (this.links.length > _local4) {
+                    _local3._ofc_link = this.links[_local4];
+                    _local3.onRelease = function () {
+                        trace(this._ofc_link);
+                        getURL (this._ofc_link);
+                    };
+                    _local3.useHandCursor = true;
+                } else {
+                    _local3.useHandCursor = false;
+                }
+                var _local5 = {x_label:labels[_local4], value:values[_local4], key:key};
+                _local3.tooltip = _local5;
+                bar_mcs[_local4] = _local3;
+                _local4++;
+            }
+        }
+        function valPos(b, right_axis, min, bar_count, bar) {
+            ExPoints = Array();
+            var _local10 = b.width_() / values.length;
+            var _local9 = _local10 * _root._bars_width;
+            var _local11 = b.left_() + ((_local10 - _local9) / 2);
+            var _local12 = _local9 / bar_count;
+            var _local3 = 0;
+            while (_local3 < values.length) {
+                var _local4 = b.makePointHLC(_local3, values[_local3].high, values[_local3].close, values[_local3].low, right_axis, bar, bar_count);
+                _local4.make_tooltip(_root.get_tooltip_string(), key, values[_local3], _root.get_x_legend(), _root.get_x_axis_label(_local3));
+                ExPoints.push(_local4);
+                _local3++;
+            }
+        }
+        function draw_bar(val, i) {
+            var _local6;
+            var _local4 = line_width;
+            var _local5 = val.width / 2;
+            var _local2 = bar_mcs[i];
+            _local2.clear();
+            _local2._alpha = 100;
+            _local2.rect2(_local5 - (_local4 / 2), 0, _local4, -(val.high - val.low), colour, 100);
+            _local2.rect2(_local5 - (_local4 / 2), val.close - val.high, val.width, _local4, colour, 100);
+            _local2.rect2(0, 0, val.width, val.low - val.high, 16711680, 0);
+            _local2._x = val.x;
+            _local2._y = val.high;
+            _local2._alpha = alpha;
+            _local2._alpha_original = alpha;
+            return(_local2);
+        }
+        var is_bar = true;
+        var line_width = 3;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 24 MovieClip [__Packages.mx.transitions.BroadcasterMX] Frame 0
+//----------------------------------------------------------------------
+    class mx.transitions.BroadcasterMX
+    {
+        var _listeners;
+        function BroadcasterMX () {
+        }
+        static function initialize(o, dontCreateArray) {
+            if (o.broadcastMessage != undefined) {
+                delete o.broadcastMessage;
+            }
+            o.addListener = mx.transitions.BroadcasterMX.prototype.addListener;
+            o.removeListener = mx.transitions.BroadcasterMX.prototype.removeListener;
+            if (!dontCreateArray) {
+                o._listeners = new Array();
+            }
+        }
+        function addListener(o) {
+            removeListener(o);
+            if (broadcastMessage == undefined) {
+                broadcastMessage = mx.transitions.BroadcasterMX.prototype.broadcastMessage;
+            }
+            return(_listeners.push(o));
+        }
+        function removeListener(o) {
+            var _local2 = _listeners;
+            var _local3 = _local2.length;
+            while (_local3--) {
+                if (_local2[_local3] == o) {
+                    _local2.splice(_local3, 1);
+                    if (!_local2.length) {
+                        broadcastMessage = undefined;
+                    }
+                    return(true);
+                }
+            }
+            return(false);
+        }
+        function broadcastMessage() {
+            var _local5 = String(arguments.shift());
+            var _local4 = _listeners.concat();
+            var _local6 = _local4.length;
+            var _local3 = 0;
+            while (_local3 < _local6) {
+                _local4[_local3][_local5].apply(_local4[_local3], arguments);
+                _local3++;
+            }
+        }
+        static var version = "1.1.0.52";
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 50 MovieClip [__Packages.XAxisLabels] Frame 0
+//----------------------------------------------------------------------
+    class XAxisLabels
+    {
+        var style, labels, mcs;
+        function XAxisLabels (lv, style, minmax) {
+            this.style = style;
+            labels = [];
+            mcs = Array();
+            if (lv.x_labels != undefined) {
+                var labels = lv.x_labels.split(",");
+                var _local3 = 0;
+                while (_local3 < labels.length) {
+                    add(labels[_local3].replace("#comma#", ","));
+                    _local3++;
+                }
+            } else if (style.show_labels) {
+                var _local3 = minmax.x_min;
+                while (_local3 <= minmax.x_max) {
+                    add(_root.format(_local3));
+                    _local3++;
+                }
+            }
+        }
+        function add(label) {
+            labels.push(label);
+            if (((labels.length - 1) % style.step) == 0) {
+                show_label(label, "x_label_" + String(labels.length));
+            }
+        }
+        function get(i) {
+            if (i < labels.length) {
+                return(labels[i]);
+            }
+            return("");
+        }
+        function del() {
+            labels.shift();
+            var _local2 = 0;
+            while (_local2 < mcs.length) {
+                removeMovieClip(mcs[_local2]._name);
+                _local2++;
+            }
+            mcs = [];
+            _local2 = 0;
+            while (_local2 < labels.length) {
+                if ((_local2 % style.step) == 0) {
+                    show_label(labels[_local2], "x_label_" + _local2);
+                }
+                _local2++;
+            }
+        }
+        function show_label(label, name) {
+            var _local3 = _root.createEmptyMovieClip(name, _root.getNextHighestDepth());
+            _local3.createTextField("txt", _root.getNextHighestDepth(), 0, 0, 100, 80);
+            _local3.txt.text = label;
+            if (style.vertical || (style.diag)) {
+                _local3.txt.embedFonts = true;
+            }
+            var _local4 = new TextFormat();
+            _local4.color = style.colour;
+            if (style.vertical) {
+                _local4.font = "Verdana_embed";
+            } else {
+                _local4.font = "Verdana";
+            }
+            _local4.size = style.size;
+            _local4.align = "left";
+            _local3.txt.setTextFormat(_local4);
+            _local3.txt.autoSize = "left";
+            if (style.vertical) {
+                _local3.txt._rotation = 270;
+                _local3.txt._y = _local3._height;
+                _local3.txt._x = -(_local3.txt._width / 2);
+            } else if (style.diag) {
+                _local3.txt._x = -_local3.txt._width;
+                _local3.txt._y = -(_local3.txt._height / 2);
+                _local3._rotation = -45;
+            } else {
+                _local3.txt._x = -(_local3.txt._width / 2);
+            }
+            mcs.push(_local3);
+        }
+        function count() {
+            return(labels.length);
+        }
+        function height() {
+            var _local3 = 0;
+            var _local2 = 0;
+            while (_local2 < mcs.length) {
+                _local3 = Math.max(_local3, mcs[_local2]._height);
+                _local2++;
+            }
+            return(_local3);
+        }
+        function move(yPos, b) {
+            var _local3 = 0;
+            var _local2 = 0;
+            while (_local2 < mcs.length) {
+                mcs[_local2]._x = b.get_x_tick_pos(_local3);
+                mcs[_local2]._y = yPos;
+                _local3 = _local3 + style.step;
+                _local2++;
+            }
+        }
+        function last_label_width() {
+            if (((labels.length - 1) % style.step) != 0) {
+                return(0);
+            }
+            return(mcs[mcs.length - 1]._width);
+        }
+        function first_label_width() {
+            return(mcs[0]._width);
+        }
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 52 MovieClip [__Packages.Title] Frame 0
+//----------------------------------------------------------------------
+    class Title
+    {
+        var style, mc;
+        function Title (lv) {
+            if (lv.title == undefined) {
+                return;
+            }
+            var _local2 = lv.title.split(",");
+            style = new Css(_local2[1]);
+            build(_local2[0]);
+        }
+        function build(text) {
+            title = text.replace("#comma#", ",");
+            if (mc == undefined) {
+                mc = _root.createEmptyMovieClip("title", _root.getNextHighestDepth());
+                mc.txt = mc.createTextField("title", _root.getNextHighestDepth(), 0, 0, 200, 200);
+            }
+            mc.txt.text = title;
+            var _local3 = new TextFormat();
+            _local3.color = style.get("color");
+            _local3.font = "Verdana";
+            _local3.size = style.get("font-size");
+            _local3.align = "center";
+            mc.txt.setTextFormat(_local3);
+            mc.txt.autoSize = "left";
+            mc.txt._y = style.padding_top;
+            mc.txt._x = style.padding_left;
+            var _local5 = (style.padding_top + mc.txt._height) + style.padding_bottom;
+            var _local4 = (style.padding_left + mc.txt._width) + style.padding_right;
+            mc.beginFill(style.get("background-color"), 100);
+            mc.moveTo(0, 0);
+            mc.lineTo(_local4, 0);
+            mc.lineTo(_local4, _local5);
+            mc.lineTo(0, _local5);
+            mc.lineTo(0, 0);
+            mc.endFill();
+        }
+        function move() {
+            if (mc != undefined) {
+                var _local2 = style.get("text-align");
+                switch (_local2) {
+                    case "left" : 
+                        mc._x = style.get("margin-left");
+                        break;
+                    case "right" : 
+                        mc._x = Stage.width - (mc._width + style.get("margin-right"));
+                        break;
+                    case "center" : 
+                    default : 
+                        mc._x = (Stage.width / 2) - (mc._width / 2);
+                }
+                mc._y = style.get("margin-top");
+            }
+        }
+        function height() {
+            if (mc == undefined) {
+                return(0);
+            }
+            return((((style.padding_top + style.margin_top) + mc.txt._height) + style.padding_bottom) + style.margin_bottom);
+        }
+        var title = "";
+        var top_padding = 0;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 26 MovieClip [__Packages.mx.transitions.easing.Elastic] Frame 0
+//----------------------------------------------------------------------
+    class mx.transitions.easing.Elastic
+    {
+        function Elastic () {
+        }
+        static function easeIn(t, b, c, d, a, p) {
+            if (t == 0) {
+                return(b);
+            }
+            t = t / d;
+            if (t == 1) {
+                return(b + c);
+            }
+            if (!p) {
+                p = d * 0.3;
+            }
+            if ((!a) || (a < Math.abs(c))) {
+                a = c;
+                var _local7 = p / 4;
+            } else {
+                var _local7 = (p / (Math.PI*2)) * Math.asin(c / a);
+            }
+            t = t - 1;
+            return((-((a * Math.pow(2, 10 * t)) * Math.sin((((t * d) - _local7) * (Math.PI*2)) / p))) + b);
+        }
+        static function easeOut(t, b, c, d, a, p) {
+            if (t == 0) {
+                return(b);
+            }
+            t = t / d;
+            if (t == 1) {
+                return(b + c);
+            }
+            if (!p) {
+                p = d * 0.3;
+            }
+            if ((!a) || (a < Math.abs(c))) {
+                a = c;
+                var _local7 = p / 4;
+            } else {
+                var _local7 = (p / (Math.PI*2)) * Math.asin(c / a);
+            }
+            return((((a * Math.pow(2, -10 * t)) * Math.sin((((t * d) - _local7) * (Math.PI*2)) / p)) + c) + b);
+        }
+        static function easeInOut(t, b, c, d, a, p) {
+            if (t == 0) {
+                return(b);
+            }
+            t = t / (d / 2);
+            if (t == 2) {
+                return(b + c);
+            }
+            if (!p) {
+                p = d * 0.45;
+            }
+            if ((!a) || (a < Math.abs(c))) {
+                a = c;
+                var _local7 = p / 4;
+            } else {
+                var _local7 = (p / (Math.PI*2)) * Math.asin(c / a);
+            }
+            if (t < 1) {
+                t = t - 1;
+                return((-0.5 * ((a * Math.pow(2, 10 * t)) * Math.sin((((t * d) - _local7) * (Math.PI*2)) / p))) + b);
+            }
+            t = t - 1;
+            return(((((a * Math.pow(2, -10 * t)) * Math.sin((((t * d) - _local7) * (Math.PI*2)) / p)) * 0.5) + c) + b);
+        }
+        static var version = "1.1.0.52";
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 45 MovieClip [__Packages.InnerBackground] Frame 0
+//----------------------------------------------------------------------
+    class InnerBackground
+    {
+        var mc;
+        function InnerBackground (lv) {
+            if (lv.inner_background == undefined) {
+                return;
+            }
+            var _local4 = lv.inner_background.split(",");
+            colour = _root.get_colour(_local4[0]);
+            trace(colour);
+            if (_local4.length > 1) {
+                colour_2 = _root.get_colour(_local4[1]);
+            }
+            if (_local4.length > 2) {
+                angle = Number(_local4[2]);
+            }
+            mc = _root.createEmptyMovieClip("inner_background", _root.getNextHighestDepth());
+            var _local3 = new flash.filters.DropShadowFilter();
+            _local3.blurX = 5;
+            _local3.blurY = 5;
+            _local3.distance = 5;
+            _local3.angle = 45;
+            _local3.quality = 2;
+            _local3.alpha = 0.5;
+        }
+        function move(box) {
+            if (mc == undefined) {
+                return(undefined);
+            }
+            mc.clear();
+            mc.lineStyle(1, 16777215, 0);
+            if (colour_2 > -1) {
+                var _local6 = "linear";
+                var _local5 = [colour, colour_2];
+                var _local3 = [100, 100];
+                var _local7 = [0, 255];
+                var _local4 = {matrixType:"box", x:0, y:0, w:box.width, h:box.height, r:(angle / 180) * Math.PI};
+                mc.beginGradientFill(_local6, _local5, _local3, _local7, _local4);
+            } else {
+                mc.beginFill(colour, 100);
+            }
+            mc.moveTo(0, 0);
+            mc.lineTo(box.width, 0);
+            mc.lineTo(box.width, box.height);
+            mc.lineTo(0, box.height);
+            mc.lineTo(0, 0);
+            mc.endFill();
+            mc._x = box.left;
+            mc._y = box.top;
+        }
+        var colour = 0;
+        var colour_2 = -1;
+        var angle = 90;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 30 MovieClip [__Packages.BarZebra] Frame 0
+//----------------------------------------------------------------------
+    class BarZebra extends BarStyle
+    {
+        var bar_mcs;
+        function BarZebra (val, name) {
+            super(val, name);
+        }
+        function bg(mc, val) {
+            var _local3 = val.width;
+            var _local5 = val.bar_bottom - val.y;
+            var _local7 = val.x;
+            var _local6 = val.y;
+            var _local2 = 10;
+            mc.lineStyle(undefined, 16777215, 100);
+            mc.beginFill(16777215, 100);
+            mc.moveTo(0 + _local2, 0);
+            mc.lineTo(_local3 - _local2, 0);
+            mc.curveTo(_local3, 0, _local3, _local2);
+            mc.lineTo(_local3, _local5);
+            mc.lineTo(0, _local5);
+            mc.lineTo(0, 0 + _local2);
+            mc.curveTo(0, 0, 0 + _local2, 0);
+            mc.endFill();
+            mc._x = _local7;
+            mc._y = _local6;
+        }
+        function bg2(mc, val) {
+            var _local5 = val.width;
+            var _local7 = val.bar_bottom - val.y;
+            var _local4 = val.x;
+            var _local3 = val.y;
+            var _local6 = 10;
+            mc.lineStyle(undefined, 16777215, 100);
+            mc.beginFill(16711680, 50);
+            mc.moveTo(0, 0);
+            mc.lineTo(_local5, 20);
+            mc.lineTo(0, 20);
+            mc.lineTo(0, 0);
+            mc.endFill();
+            mc._x = _local4;
+            mc._y = _local3;
+        }
+        function draw_bar(val, i) {
+            var _local2 = bar_mcs[i];
+            _local2.clear();
+            bg(_local2, val);
+            var _local9 = _local2.createEmptyMovieClip("overlay", _local2.getNextHighestDepth());
+            bg2(_local9, val);
+            var _local4 = new flash.filters.DropShadowFilter();
+            _local4.blurX = 5;
+            _local4.blurY = 5;
+            _local4.distance = 3;
+            _local4.angle = 45;
+            _local4.quality = 2;
+            _local4.alpha = 0.4;
+            _local2.filters = [_local4];
+            return(undefined);
+        }
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 18 MovieClip [__Packages.LineStyle] Frame 0
+//----------------------------------------------------------------------
+    class LineStyle extends Style
+    {
+        var name, line_width, colour, key, font_size, circle_size, mc, mc2, set_values, ExPoints, values;
+        function LineStyle (lv, name) {
+            super();
+            this.name = "line" + name;
+            var _local4 = lv[this.name].split(",");
+            line_width = Number(_local4[0]);
+            colour = _root.get_colour(_local4[1]);
+            if (_local4.length > 2) {
+                key = _local4[2].replace("#comma#", ",");
+            }
+            if (_local4.length > 3) {
+                font_size = Number(_local4[3]);
+            }
+            if (length(_local4) > 4) {
+                circle_size = Number(_local4[4]);
+            }
+            mc = _root.createEmptyMovieClip(name, _root.getNextHighestDepth());
+            mc2 = _root.createEmptyMovieClip(name, _root.getNextHighestDepth());
+            mc2.fillCircle(0, 0, 7, 15, 16777215);
+            mc2.fillCircle(0, 0, 5, 15, colour);
+            mc2._visible = false;
+            set_values(lv["values" + name].split(","));
+        }
+        function valPos(b, right_axis, min) {
+            ExPoints = Array();
+            var _local7 = "";
+            if (_root._x_legend != undefined) {
+                var _local3 = 0;
+                while (_local3 < values.length) {
+                    if (values[_local3] == "null") {
+                        ExPoints.push(null);
+                    } else {
+                        var _local4 = b.make_point(_local3, Number(values[_local3]), right_axis);
+                        _local4.make_tooltip(_root.get_tooltip_string(), key, Number(values[_local3]), _root.get_x_legend(), _root.get_x_axis_label(_local3));
+                        ExPoints.push(_local4);
+                    }
+                    _local3++;
+                }
+            }
+        }
+        function draw() {
+            mc.clear();
+            mc.lineStyle(line_width, colour, 100);
+            var _local3 = true;
+            var _local2 = 0;
+            while (_local2 < ExPoints.length) {
+                if (ExPoints[_local2] != null) {
+                    if (_local3) {
+                        mc.moveTo(ExPoints[_local2].x, ExPoints[_local2].y);
+                        _local3 = false;
+                    } else {
+                        mc.lineTo(ExPoints[_local2].x, ExPoints[_local2].y);
+                    }
+                }
+                _local2++;
+            }
+        }
+        function highlight_value() {
+            var _local3 = false;
+            var _local2 = 0;
+            while (_local2 < ExPoints.length) {
+                if (ExPoints[_local2].is_tip) {
+                    mc2._x = ExPoints[_local2].x;
+                    mc2._y = ExPoints[_local2].y;
+                    mc2._visible = true;
+                    _local3 = true;
+                    break;
+                }
+                _local2++;
+            }
+            if (!_local3) {
+                mc2._visible = false;
+            }
+        }
+        function rollOver() {
+        }
+        function closest(x, y) {
+            var _local4 = Number.MAX_VALUE;
+            var _local9 = null;
+            var _local3;
+            var _local2 = 0;
+            while (_local2 < ExPoints.length) {
+                ExPoints[_local2].is_tip = false;
+                _local3 = Math.abs(x - ExPoints[_local2].x);
+                if (_local3 < _local4) {
+                    _local4 = _local3;
+                    _local9 = ExPoints[_local2];
+                }
+                _local2++;
+            }
+            var _local6 = Math.abs(y - _local9.y);
+            return({point:_local9, distance_x:_local4, distance_y:_local6});
+        }
+        function make_dot(mc, col, bg, tool_tip_title, tool_tip_value) {
+            if (tool_tip_title != undefined) {
+                mc.tool_tip_title = tool_tip_title;
+            } else {
+                mc.tool_tip_title = "";
+            }
+            mc.tool_tip_value = tool_tip_value;
+            var ref = mc;
+            mc.onRollOver = function () {
+                ref._width = ref._width + 4;
+                ref._height = ref._height + 4;
+                _root.show_tip(this, this._x, this._y - 20, this.tool_tip_title, this.tool_tip_value);
+            };
+            mc.onRollOut = function () {
+                _root.hide_tip(this);
+                ref._width = ref._width - 4;
+                ref._height = ref._height - 4;
+            };
+            mc.lineStyle(0, bg, 100);
+            mc.fillCircle(0, 0, circle_size, 15, bg);
+            mc.fillCircle(0, 0, circle_size - 1, 15, col);
+        }
+        function move_dot(val, mc) {
+            mc._x = val.x;
+            mc._y = val.y;
+        }
+        function is_over(x, y) {
+            if (x < 0) {
+                mc2._visible = false;
+            }
+        }
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 44 MovieClip [__Packages.YTicks] Frame 0
+//----------------------------------------------------------------------
+    class YTicks
+    {
+        function YTicks (lv) {
+            if (lv.y_ticks != undefined) {
+                var _local2 = lv.y_ticks.split(",");
+                if (_local2.length == 3) {
+                    small = Number(_local2[0]);
+                    big = Number(_local2[1]);
+                    steps = Number(_local2[2]);
+                }
+            }
+        }
+        var big = 5;
+        var small = 2;
+        var steps = 2;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 38 MovieClip [__Packages.CandleStyle] Frame 0
+//----------------------------------------------------------------------
+    class CandleStyle extends BarStyle
+    {
+        var name, links, alpha, colour, key, font_size, values, bar_mcs, ExPoints;
+        function CandleStyle (lv, name) {
+            super();
+            this.name = "candle" + name;
+            parse_bar(lv[this.name]);
+            links = new Array();
+        }
+        function parse_bar(val) {
+            var _local3 = val.split(",");
+            alpha = Number(_local3[0]);
+            line_width = Number(_local3[1]);
+            colour = _root.get_colour(_local3[2]);
+            if (_local3.length > 3) {
+                key = _local3[3];
+            }
+            if (_local3.length > 4) {
+                font_size = Number(_local3[4]);
+            }
+        }
+        function parse_group(g) {
+            var _local2 = g.split(",");
+            values.push({high:Number(_local2[0]), open:Number(_local2[1]), close:Number(_local2[2]), low:Number(_local2[3])});
+        }
+        function groups(vals) {
+            var _local5 = new Array();
+            var _local2 = "";
+            var _local3 = false;
+            var _local1 = 0;
+            while (_local1 < vals.length) {
+                switch (vals.charAt(_local1)) {
+                    case "[" : 
+                        _local3 = true;
+                        break;
+                    case "]" : 
+                        _local3 = false;
+                        _local5.push(_local2);
+                        _local2 = "";
+                        break;
+                    default : 
+                        if (!_local3) { 
+                            break;
+                        }
+                        _local2 = _local2 + vals.charAt(_local1);
+                }
+                _local1++;
+            }
+            return(_local5);
+        }
+        function set_values(v, labels, links) {
+            values = new Array();
+            if (links != undefined) {
+                this.links = links.split(",");
+            }
+            var _local6 = groups(v);
+            var _local4 = 0;
+            while (_local4 < _local6.length) {
+                parse_group(_local6[_local4]);
+                _local4++;
+            }
+            bar_mcs = new Array(values.length);
+            _local4 = 0;
+            while (_local4 < values.length) {
+                var _local3 = _root.createEmptyMovieClip((name + "_") + _local4, _root.getNextHighestDepth());
+                _local3.onRollOver = _root.FadeIn2;
+                _local3.onRollOut = _root.FadeOut;
+                if (this.links.length > _local4) {
+                    _local3._ofc_link = this.links[_local4];
+                    _local3.onRelease = function () {
+                        trace(this._ofc_link);
+                        getURL (this._ofc_link);
+                    };
+                    _local3.useHandCursor = true;
+                } else {
+                    _local3.useHandCursor = false;
+                }
+                var _local5 = {x_label:labels[_local4], value:values[_local4], key:key};
+                _local3.tooltip = _local5;
+                bar_mcs[_local4] = _local3;
+                _local4++;
+            }
+        }
+        function valPos(b, right_axis, min, bar_count, bar) {
+            ExPoints = Array();
+            var _local10 = b.width_() / values.length;
+            var _local9 = _local10 * _root._bars_width;
+            var _local11 = b.left_() + ((_local10 - _local9) / 2);
+            var _local12 = _local9 / bar_count;
+            var _local3 = 0;
+            while (_local3 < values.length) {
+                var _local4 = b.make_point_candle(_local3, values[_local3].high, values[_local3].open, values[_local3].close, values[_local3].low, right_axis, bar, bar_count);
+                _local4.make_tooltip(_root.get_tooltip_string(), key, values[_local3], _root.get_x_legend(), _root.get_x_axis_label(_local3));
+                ExPoints.push(_local4);
+                _local3++;
+            }
+        }
+        function draw_bar(val, i) {
+            var _local9;
+            var _local5;
+            var _local4 = line_width;
+            var _local7 = false;
+            if (val.open > val.close) {
+                _local7 = true;
+                var _local8 = val.open;
+                val.open = val.close;
+                val.close = _local8;
+            }
+            _local5 = val.close - val.open;
+            var _local6 = val.width / 2;
+            var _local3 = bar_mcs[i];
+            _local3.clear();
+            _local3._alpha = 100;
+            _local3.rect2(_local6 - (_local4 / 2), 0, _local4, val.open - val.high, colour, 100);
+            if (!_local7) {
+                _local3.rect2(0, val.open - val.high, val.width, _local5, colour, 100);
+            } else {
+                _local3.rect2(0, val.open - val.high, val.width, _local4, colour, 100);
+                _local3.rect2(0, (val.open - val.high) + _local4, _local4, _local5 - (2 * _local4), colour, 100);
+                _local3.rect2(val.width - _local4, (val.open - val.high) + _local4, _local4, _local5 - (2 * _local4), colour, 100);
+                _local3.rect2(0, ((val.open - val.high) + _local5) - _local4, val.width, _local4, colour, 100);
+            }
+            _local3.rect2(0, 0, val.width, val.low - val.high, 16711680, 0);
+            _local3.rect2(_local6 - (_local4 / 2), (val.open - val.high) + _local5, _local4, val.low - val.close, colour, 100);
+            _local3._x = val.x;
+            _local3._y = val.high;
+            _local3._alpha = alpha;
+            _local3._alpha_original = alpha;
+            return(_local3);
+        }
+        var is_bar = true;
+        var line_width = 3;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 23 MovieClip [__Packages.mx.transitions.OnEnterFrameBeacon] Frame 0
+//----------------------------------------------------------------------
+    class mx.transitions.OnEnterFrameBeacon
+    {
+        function OnEnterFrameBeacon () {
+        }
+        static function init() {
+            var _local4 = _global.MovieClip;
+            if (!_root.__OnEnterFrameBeacon) {
+                mx.transitions.BroadcasterMX.initialize(_local4);
+                var _local3 = _root.createEmptyMovieClip("__OnEnterFrameBeacon", 9876);
+                _local3.onEnterFrame = function () {
+                    _global.MovieClip.broadcastMessage("onEnterFrame");
+                };
+            }
+        }
+        static var version = "1.1.0.52";
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 19 MovieClip [__Packages.LineDot] Frame 0
+//----------------------------------------------------------------------
+    class LineDot extends LineStyle
+    {
+        var mcs, values, name, line_width, colour, key, font_size, circle_size, mc2, set_values, ExPoints, mc;
+        function LineDot (lv, name) {
+            super();
+            mcs = [];
+            values = [];
+            bgColour = _root.get_background_colour();
+            this.name = "line_dot" + name;
+            var _local4 = lv[this.name].split(",");
+            line_width = Number(_local4[0]);
+            colour = _root.get_colour(_local4[1]);
+            if (_local4.length > 2) {
+                key = _local4[2].replace("#comma#", ",");
+            }
+            if (_local4.length > 3) {
+                font_size = Number(_local4[3]);
+            }
+            if (length(_local4) > 4) {
+                circle_size = Number(_local4[4]);
+            }
+            mc2.clear();
+            mc2.lineStyle(0, 0, 0);
+            mc2.fillCircle(0, 0, circle_size + 2, 15, bgColour);
+            mc2.fillCircle(0, 0, circle_size + 1, 15, colour);
+            mc2._visible = false;
+            set_values(lv["values" + name].split(","));
+        }
+        function del() {
+            removeMovieClip(mcs[0]._name);
+            mcs.shift();
+            values.shift();
+        }
+        function draw() {
+            super.draw();
+            if (circle_size == 0) {
+                return(undefined);
+            }
+            var _local4 = 0;
+            while (_local4 < ExPoints.length) {
+                var _local3 = ExPoints[_local4];
+                mc.lineStyle(0, 0, 0);
+                mc.fillCircle(_local3.x, _local3.y, circle_size, 15, bgColour);
+                mc.fillCircle(_local3.x, _local3.y, circle_size - 1, 15, colour);
+                _local4++;
+            }
+        }
+        var bgColour = 0;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 47 MovieClip [__Packages.mx.transitions.easing.Regular] Frame 0
+//----------------------------------------------------------------------
+    class mx.transitions.easing.Regular
+    {
+        function Regular () {
+        }
+        static function easeIn(t, b, c, d) {
+            t = t / d;
+            return(((c * t) * t) + b);
+        }
+        static function easeOut(t, b, c, d) {
+            t = t / d;
+            return((((-c) * t) * (t - 2)) + b);
+        }
+        static function easeInOut(t, b, c, d) {
+            t = t / (d / 2);
+            if (t < 1) {
+                return((((c / 2) * t) * t) + b);
+            }
+            t--;
+            return((((-c) / 2) * ((t * (t - 2)) - 1)) + b);
+        }
+        static var version = "1.1.0.52";
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 25 MovieClip [__Packages.mx.transitions.Tween] Frame 0
+//----------------------------------------------------------------------
+    class mx.transitions.Tween
+    {
+        var obj, prop, begin, useSeconds, _listeners, addListener, prevTime, _time, looping, _duration, broadcastMessage, isPlaying, _fps, prevPos, _pos, change, _intervalID, _startTime;
+        function Tween (obj, prop, func, begin, finish, duration, useSeconds) {
+            mx.transitions.OnEnterFrameBeacon.init();
+            if (!arguments.length) {
+                return;
+            }
+            this.obj = obj;
+            this.prop = prop;
+            this.begin = begin;
+            position = (begin);
+            this.duration = (duration);
+            this.useSeconds = useSeconds;
+            if (func) {
+                this.func = func;
+            }
+            this.finish = (finish);
+            _listeners = [];
+            addListener(this);
+            start();
+        }
+        function set time(t) {
+            prevTime = _time;
+            if (t > duration) {
+                if (looping) {
+                    rewind(t - _duration);
+                    update();
+                    broadcastMessage("onMotionLooped", this);
+                } else {
+                    if (useSeconds) {
+                        _time = _duration;
+                        update();
+                    }
+                    stop();
+                    broadcastMessage("onMotionFinished", this);
+                }
+            } else if (t < 0) {
+                rewind();
+                update();
+            } else {
+                _time = t;
+                update();
+            }
+            //return(time);
+        }
+        function get time() {
+            return(_time);
+        }
+        function set duration(d) {
+            _duration = (((d == null) || (d <= 0)) ? (_global.Infinity) : (d));
+            //return(duration);
+        }
+        function get duration() {
+            return(_duration);
+        }
+        function set FPS(fps) {
+            var _local2 = isPlaying;
+            stopEnterFrame();
+            _fps = fps;
+            if (_local2) {
+                startEnterFrame();
+            }
+            //return(FPS);
+        }
+        function get FPS() {
+            return(_fps);
+        }
+        function set position(p) {
+            setPosition(p);
+            //return(position);
+        }
+        function setPosition(p) {
+            prevPos = _pos;
+            obj[prop] = (_pos = p);
+            broadcastMessage("onMotionChanged", this, _pos);
+            updateAfterEvent();
+        }
+        function get position() {
+            return(getPosition());
+        }
+        function getPosition(t) {
+            if (t == undefined) {
+                t = _time;
+            }
+            return(func(t, begin, change, _duration));
+        }
+        function set finish(f) {
+            change = f - begin;
+            //return(finish);
+        }
+        function get finish() {
+            return(begin + change);
+        }
+        function continueTo(finish, duration) {
+            begin = position;
+            this.finish = (finish);
+            if (duration != undefined) {
+                this.duration = (duration);
+            }
+            start();
+        }
+        function yoyo() {
+            continueTo(begin, time);
+        }
+        function startEnterFrame() {
+            if (_fps == undefined) {
+                _global.MovieClip.addListener(this);
+            } else {
+                _intervalID = setInterval(this, "onEnterFrame", 1000 / _fps);
+            }
+            isPlaying = true;
+        }
+        function stopEnterFrame() {
+            if (_fps == undefined) {
+                _global.MovieClip.removeListener(this);
+            } else {
+                clearInterval(_intervalID);
+            }
+            isPlaying = false;
+        }
+        function start() {
+            rewind();
+            startEnterFrame();
+            broadcastMessage("onMotionStarted", this);
+        }
+        function stop() {
+            stopEnterFrame();
+            broadcastMessage("onMotionStopped", this);
+        }
+        function resume() {
+            fixTime();
+            startEnterFrame();
+            broadcastMessage("onMotionResumed", this);
+        }
+        function rewind(t) {
+            _time = ((t == undefined) ? 0 : (t));
+            fixTime();
+            update();
+        }
+        function fforward() {
+            time = (_duration);
+            fixTime();
+        }
+        function nextFrame() {
+            if (useSeconds) {
+                time = ((getTimer() - _startTime) / 1000);
+            } else {
+                time = (_time + 1);
+            }
+        }
+        function onEnterFrame() {
+            nextFrame();
+        }
+        function prevFrame() {
+            if (!useSeconds) {
+                time = (_time - 1);
+            }
+        }
+        function toString() {
+            return("[Tween]");
+        }
+        function fixTime() {
+            if (useSeconds) {
+                _startTime = getTimer() - (_time * 1000);
+            }
+        }
+        function update() {
+            position = (getPosition(_time));
+        }
+        static var version = "1.1.0.52";
+        static var __initBeacon = mx.transitions.OnEnterFrameBeacon.init();
+        static var __initBroadcaster = mx.transitions.BroadcasterMX.initialize(mx.transitions.Tween.prototype, true);
+        function func(t, b, c, d) {
+            return(((c * t) / d) + b);
+        }
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 43 MovieClip [__Packages.YAxis] Frame 0
+//----------------------------------------------------------------------
+    class YAxis
+    {
+        var ticks, grid_colour, right, axis_colour, min, max, steps, mc;
+        function YAxis (y_ticks, lv, min, max, steps, nr) {
+            ticks = y_ticks;
+            if (lv.y_grid_colour != undefined) {
+                grid_colour = _root.get_colour(lv.y_grid_colour);
+            } else {
+                grid_colour = 16114090 /* 0xF5E1AA */;
+            }
+            right = nr == 2;
+            if (!right) {
+                if (lv.y_axis_colour != undefined) {
+                    axis_colour = _root.get_colour(lv.y_axis_colour);
+                } else {
+                    axis_colour = 7880726 /* 0x784016 */;
+                }
+            } else if (lv.y2_axis_colour != undefined) {
+                axis_colour = _root.get_colour(lv.y2_axis_colour);
+            } else {
+                axis_colour = 7880726 /* 0x784016 */;
+            }
+            this.min = min;
+            this.max = max;
+            this.steps = steps;
+            if (!right) {
+                mc = _root.createEmptyMovieClip("y_axis", _root.getNextHighestDepth());
+            } else {
+                mc = _root.createEmptyMovieClip("y_axis2", _root.getNextHighestDepth());
+            }
+            _width = line_width + Math.max(ticks.small, ticks.big);
+        }
+        function move(box) {
+            if (right) {
+                _move_right(box);
+            } else {
+                _move_left(box);
+            }
+        }
+        function _move_left(box) {
+            mc.clear();
+            mc.lineStyle(1, grid_colour, 100);
+            var _local6 = (max - min) / steps;
+            var _local5 = 0;
+            var _local3 = min;
+            while (_local3 <= max) {
+                var _local4 = box.getY(_local3);
+                if (_local5 == 0) {
+                    mc.lineStyle(1, grid_colour, 0);
+                }
+                mc.moveTo(box.left, _local4);
+                mc.lineTo(box.right, _local4);
+                if (_local5 == 0) {
+                    mc.lineStyle(1, grid_colour, 100);
+                }
+                _local5 = _local5 + 1;
+                _local3 = _local3 + _local6;
+            }
+            mc.lineStyle(line_width, axis_colour, 100);
+            mc.moveTo(box.left, box.top);
+            mc.lineTo(box.left, box.bottom);
+            _local6 = (max - min) / steps;
+            _local3 = min;
+            while (_local3 <= max) {
+                var _local4 = box.getY(_local3, false);
+                mc.moveTo(box.left, _local4);
+                if ((_local3 % ticks.steps) == 0) {
+                    mc.lineTo(box.left - ticks.big, _local4);
+                } else {
+                    mc.lineTo(box.left - ticks.small, _local4);
+                }
+                _local3 = _local3 + _local6;
+            }
+        }
+        function _move_right(box) {
+            mc.clear();
+            mc.lineStyle(line_width, axis_colour, 100);
+            mc.moveTo(box.right, box.top);
+            mc.lineTo(box.right, box.bottom);
+            var _local5 = (max - min) / steps;
+            var _local2 = min;
+            while (_local2 <= max) {
+                var _local3 = box.getY(_local2);
+                mc.moveTo(box.right, _local3);
+                if ((_local2 % ticks.steps) == 0) {
+                    mc.lineTo(box.right + ticks.big, _local3);
+                } else {
+                    mc.lineTo(box.right + ticks.small, _local3);
+                }
+                _local2 = _local2 + _local5;
+            }
+        }
+        function width() {
+            return(_width);
+        }
+        var _width = 0;
+        var line_width = 2;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 29 MovieClip [__Packages.BarFade] Frame 0
+//----------------------------------------------------------------------
+    class BarFade extends BarStyle
+    {
+        var name, parse_bar, set_values, bar_mcs, colour, alpha;
+        function BarFade (lv, name) {
+            super();
+            this.name = "bar_fade" + name;
+            parse_bar(lv[this.name]);
+            set_values(lv["values" + name], lv["links" + name], lv["tool_tips_set" + name]);
+        }
+        function draw_bar(val, i) {
+            var _local2 = bar_mcs[i];
+            _local2.clear();
+            var _local5;
+            var _local4;
+            if (val.bar_bottom < val.y) {
+                _local5 = val.bar_bottom;
+                _local4 = val.y - val.bar_bottom;
+            } else {
+                _local5 = val.y;
+                _local4 = val.bar_bottom - val.y;
+            }
+            var _local8 = [colour, 16777215];
+            var _local6 = [100, 0];
+            var _local9 = [0, 255];
+            var _local7 = {matrixType:"box", x:0, y:0, w:val.width, h:_local4, r:(Math.PI/2)};
+            _local2.beginGradientFill("linear", _local8, _local6, _local9, _local7);
+            _local2.moveTo(0, 0);
+            _local2.lineTo(val.width, 0);
+            _local2.lineTo(val.width, _local4);
+            _local2.lineTo(0, _local4);
+            _local2.lineTo(0, 0);
+            _local2.endFill();
+            _local2._x = val.x;
+            _local2._y = _local5;
+            _local2._alpha = alpha;
+            _local2._alpha_original = alpha;
+            return(_local2);
+        }
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 49 MovieClip [__Packages.YLabelStyle] Frame 0
+//----------------------------------------------------------------------
+    class YLabelStyle
+    {
+        var size, show_labels;
+        function YLabelStyle (lv, nr) {
+            size = 10;
+            colour = 0;
+            show_labels = true;
+            if (nr != 2) {
+                if (lv.y_label_style == undefined) {
+                    return;
+                }
+                var _local5 = lv.y_label_style.lastIndexOf(",");
+                if (_local5 < 0) {
+                    var _local6 = lv.y_label_style.lastIndexOf("none", 0);
+                    if (_local6 > -1) {
+                        show_labels = false;
+                    }
+                } else {
+                    var _local4 = lv.y_label_style.split(",");
+                    if (_local4.length > 0) {
+                        size = _local4[0];
+                    }
+                    if (_local4.length > 1) {
+                        colour = _root.get_colour(_local4[1]);
+                    }
+                }
+            } else {
+                if (lv.y2_label_style == undefined) {
+                    return;
+                }
+                var _local5 = lv.y2_label_style.lastIndexOf(",");
+                if (_local5 < 0) {
+                    var _local6 = lv.y2_label_style.lastIndexOf("none", 0);
+                    if (_local6 > -1) {
+                        show_labels = false;
+                    }
+                } else {
+                    var _local4 = lv.y2_label_style.split(",");
+                    if (_local4.length > 0) {
+                        size = _local4[0];
+                    }
+                    if (_local4.length > 1) {
+                        colour = _root.get_colour(_local4[1]);
+                    }
+                }
+            }
+        }
+        var colour = 0;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 35 MovieClip [__Packages.mx.transitions.easing.Bounce] Frame 0
+//----------------------------------------------------------------------
+    class mx.transitions.easing.Bounce
+    {
+        function Bounce () {
+        }
+        static function easeOut(t, b, c, d) {
+            t = t / d;
+            if (t < 0.363636363636364) {
+                return((c * ((7.5625 * t) * t)) + b);
+            }
+            if (t < 0.727272727272727) {
+                t = t - 0.545454545454545;
+                return((c * (((7.5625 * t) * t) + 0.75)) + b);
+            }
+            if (t < 0.909090909090909) {
+                t = t - 0.818181818181818;
+                return((c * (((7.5625 * t) * t) + 0.9375)) + b);
+            }
+            t = t - 0.954545454545455;
+            return((c * (((7.5625 * t) * t) + 0.984375)) + b);
+        }
+        static function easeIn(t, b, c, d) {
+            return((c - easeOut(d - t, 0, c, d)) + b);
+        }
+        static function easeInOut(t, b, c, d) {
+            if (t < (d / 2)) {
+                return((easeIn(t * 2, 0, c, d) * 0.5) + b);
+            }
+            return(((easeOut((t * 2) - d, 0, c, d) * 0.5) + (c * 0.5)) + b);
+        }
+        static var version = "1.1.0.52";
+    }
+﻿
+//----------------------------------------------------------------------
+//Frame 1
+//----------------------------------------------------------------------
+    function get_colour(col) {
+        if (col.substr(0, 2) == "0x") {
+            return(Number(col));
+        }
+        if (col.substr(0, 1) == "#") {
+            return(Number("0x" + col.substr(1, col.length)));
+        }
+        if ((col.length = 6)) {
+            return(Number("0x" + col));
+        }
+        return(Number(col));
+    }
+    function format(i) {
+        return(NumberUtils.formatNumber(i));
+    }
+    function formatTime(sval) {
+        var _local3 = parseFloat(sval);
+        var _local4 = Math.floor(_local3);
+        var _local2 = Math.round((_local3 - _local4) * 60);
+        var _local1 = "" + _local4;
+        if (_local1.length < 2) {
+            _local1 = "0" + _local1;
+        }
+        if (_local2 < 10) {
+            _local1 = (_local1 + ":0") + _local2;
+        } else {
+            _local1 = (_local1 + ":") + _local2;
+        }
+        return(_local1);
+    }
+    function setContextualMenu() {
+        var contextual_menu = new ContextMenu();
+        var About = new ContextMenuItem("About Open Flash Chart...");
+        About.onSelect = function (obj, item) {
+            getURL ("javascript:popup=window.open('http://teethgrinder.co.uk/open-flash-chart/','ofc', 'toolbar=Yes,location=Yes,scrollbars=Yes,menubar=Yes,status=Yes,resizable=Yes,fullscreen=No'); popup.focus()");
+        };
+        contextual_menu.customItems.push(About);
+        var MyPrint = new ContextMenuItem("Print Chart...");
+        MyPrint.onSelect = function (obj, item) {
+            var pj = new PrintJob();
+            if (pj.start()) {
+                var r = {width:_root._width, height:_root._height};
+                if (r.width > r.height) {
+                    var scaleFactor = (pj.pageWidth / r.width);
+                } else {
+                    var scaleFactor = (pj.pageWidth / r.height);
+                }
+                _root._xscale = (scaleFactor * 100) - 1;
+                _root._yscale = (scaleFactor * 100) - 1;
+                if (pj.addPage(0, {xMin:0, xMax:Stage.width, yMin:0, yMax:Stage.height})) {
+                    pj.send();
+                }
+                with (_root) {
+                    _width = r.width;
+                    _height = r.height;
+                }
+            }
+            delete pj;
+        };
+        contextual_menu.customItems.push(MyPrint);
+        contextual_menu.hideBuiltInItems();
+        _root.menu = contextual_menu;
+    }
+    function TxtFormat(size, colour) {
+        var _local1 = new TextFormat();
+        _local1.color = colour;
+        _local1.font = "Verdana";
+        _local1.size = size;
+        _local1.align = "center";
+        return(_local1);
+    }
+    function FadeIn() {
+        this.onEnterFrame = function () {
+            _root.show_tip(this, this._x, this._y - 20, this.tooltip);
+            if (this._alpha < 100) {
+                this._alpha = this._alpha + 10;
+            } else {
+                this._alpha = 100;
+                delete this.onEnterFrame;
+            }
+        };
+    }
+    function FadeIn2() {
+        this.onEnterFrame = function () {
+            if (this._alpha < 100) {
+                this._alpha = this._alpha + 10;
+            } else {
+                this._alpha = 100;
+                delete this.onEnterFrame;
+            }
+        };
+    }
+    function FadeOut() {
+        this.onEnterFrame = function () {
+            if ((this._alpha - 5) > this._alpha_original) {
+                this._alpha = this._alpha - 5;
+            } else {
+                this._alpha = this._alpha_original;
+                _root.hide_tip(this);
+                delete this.onEnterFrame;
+            }
+        };
+    }
+    function hide_tip(owner) {
+        if (_root.tooltip._owner == owner) {
+            removeMovieClip("tooltip");
+        }
+    }
+    function get_x_legend() {
+        if (_root._x_legend != undefined) {
+            return(_root._x_legend.get_legend());
+        }
+    }
+    function get_tooltip_string() {
+        return(_root.tool_tip_wrapper);
+    }
+    function get_x_axis_label(i) {
+        return(_root._x_axis_labels.get(i));
+    }
+    function get_background_colour() {
+        return(_root._background.colour);
+    }
+    function format_y_axis_label(val) {
+        if (_root._y_format != undefined) {
+            var _local2 = _root._y_format.replace("#val#", _root.format(val));
+            _local2 = _local2.replace("#val:time#", _root.formatTime(val));
+            _local2 = _local2.replace("#val:none#", String(val));
+            _local2 = _local2.replace("#val:number#", NumberUtils.formatNumber(Number(val)));
+            return(_local2);
+        }
+        return(_root.format(val));
+    }
+    function show_tip(owner, x, y, tip_obj) {
+        if (_root.tooltip != undefined) {
+            if (_root.tooltip._owner == owner) {
+                return(undefined);
+            }
+            removeMovieClip("tooltip");
+        }
+        var _local4;
+        var _local9 = [];
+        if (_root.tool_tip_wrapper != undefined) {
+            _local4 = _root.tool_tip_wrapper.replace("#val#", tip_obj.value);
+            _local4 = _local4.replace("#key#", tip_obj.key);
+            _local4 = _local4.replace("#x_label#", tip_obj.x_label);
+            _local4 = _local4.replace("#val:time#", formatTime(tip_obj.value));
+            if (_root._x_legend != undefined) {
+                _local4 = _local4.replace("#x_legend#", _root._x_legend.get_legend());
+            }
+        } else if (tip_obj.x_label == undefined) {
+            _local4 = tip_obj.value;
+        } else {
+            _local4 = (tip_obj.x_label + "<br>") + tip_obj.value;
+        }
+        _local9 = _local4.split("<br>");
+        var _local3 = _root.createEmptyMovieClip("tooltip", this.getNextHighestDepth());
+        _local3._owner = owner;
+        _local3.createTextField("txt_title", _local3.getNextHighestDepth(), 5, 5, 100, 100);
+        if (_local9.length > 1) {
+            _local3.txt_title.text = _local9.shift();
+        }
+        var _local7 = new TextFormat();
+        _local7.color = 240;
+        _local7.font = "Verdana";
+        _local7.bold = true;
+        _local7.size = 12;
+        _local7.align = "right";
+        _local3.txt_title.setTextFormat(_local7);
+        _local3.txt_title.autoSize = "left";
+        _local3.createTextField("txt", _local3.getNextHighestDepth(), 5, _local3.txt_title._height, 100, 100);
+        _local3.txt.text = _local9.join(newline);
+        var _local8 = new TextFormat();
+        _local8.color = 0;
+        _local8.font = "Verdana";
+        _local8.size = 12;
+        _local8.align = "left";
+        _local3.txt.setTextFormat(_local8);
+        _local3.txt.autoSize = "left";
+        var _local11 = Math.max(_local3.txt_title._width, _local3.txt._width);
+        var _local10 = (y - _local3.txt_title._height) - _local3.txt._height;
+        if (_local10 < 0) {
+            _local10 = (y + _local3.txt_title._height) + _local3.txt._height;
+        }
+        var _local12 = {width:2, color:8421504, alpha:100};
+        var _local13 = {color:15790320, alpha:100};
+        ChartUtil.rrectangle(_local3, _local11 + 10, (_local3.txt_title._height + _local3.txt._height) + 5, 6, ((((x + _local11) + 16) > Stage.width) ? ((Stage.width - _local11) - 16) : (x)), _local10, _local12, _local13);
+        var _local5 = new flash.filters.DropShadowFilter();
+        _local5.blurX = 4;
+        _local5.blurY = 4;
+        _local5.distance = 4;
+        _local5.angle = 45;
+        _local5.quality = 2;
+        _local5.alpha = 0.5;
+        _local3.filters = [_local5];
+    }
+    function is_over(link) {
+        _root._inv.use_hand(link);
+    }
+    function is_out() {
+        _root._inv.use_arrow();
+    }
+    function mouse_over(ok) {
+        var _local3 = _root._xmouse;
+        var _local2 = _root._ymouse;
+        if (!ok) {
+            _local3 = -1;
+            _local2 = -1;
+        }
+        _root.chartValues.mouse_move(_local3, _local2);
+    }
+    function get_closest() {
+        var _local4 = [];
+        var _local3 = null;
+        var _local2 = 0;
+        while (_local2 < _root.chartValues.styles.length) {
+            _local3 = _root.chartValues.styles[_local2];
+            _local4.push(_local3.closest(_root._xmouse, _root._ymouse));
+            _local2++;
+        }
+        return(_local4);
+    }
+    function mouse_move() {
+        if (_root.chartValues == undefined) {
+            return(undefined);
+        }
+        if (!_root._inv.hitTest(_root._xmouse, _root._ymouse)) {
+            return(undefined);
+        }
+        mouse_over(true);
+        var _local2 = _root.get_closest();
+        var _local4 = Number.MAX_VALUE;
+        var _local3 = 0;
+        while (_local3 < _local2.length) {
+            _local4 = Math.min(_local4, _local2[_local3].distance_x);
+            _local3++;
+        }
+        var _local5 = {point:null, distance_x:Number.MAX_VALUE, distance_y:Number.MAX_VALUE};
+        _local3 = 0;
+        while (_local3 < _local2.length) {
+            if (_local2[_local3].distance_x == _local4) {
+                if (_local2[_local3].distance_y < _local5.distance_y) {
+                    _local5 = _local2[_local3];
+                }
+            }
+            _local3++;
+        }
+        _root.tooltip_x.draw(_local5.point);
+        _local5.point.is_tip = true;
+        _local3 = 0;
+        while (_local3 < _root.chartValues.styles.length) {
+            _root.chartValues.styles[_local3].highlight_value();
+            _local3++;
+        }
+    }
+    function hide_oops() {
+        removeMovieClip("oops");
+    }
+    function oops(text) {
+        if (_root.oops != undefined) {
+            hide_oops();
+        }
+        var _local3 = _root.createEmptyMovieClip("oops", this.getNextHighestDepth());
+        _local3.createTextField("txt", this.getNextHighestDepth(), 5, 5, 100, 100);
+        _local3.txt.text = text;
+        var _local5 = new TextFormat();
+        _local5.color = 0;
+        _local5.font = "Verdana";
+        _local5.size = 12;
+        _local5.align = "center";
+        _local3.txt.setTextFormat(_local5);
+        _local3.txt.autoSize = "left";
+        _local3.txt.setTextFormat(_local5);
+        var _local6 = {width:2, color:8421504, alpha:100};
+        var _local7 = {color:15790320, alpha:100};
+        ChartUtil.rrectangle(_local3, _local3.txt._width + 10, _local3.txt._height + 10, 6, (Stage.width / 2) - ((_local3.txt._width + 10) / 2), (Stage.height / 2) - ((_local3.txt._height + 10) / 2), _local6, _local7);
+        var _local4 = new flash.filters.DropShadowFilter();
+        _local4.blurX = 4;
+        _local4.blurY = 4;
+        _local4.distance = 4;
+        _local4.angle = 45;
+        _local4.quality = 2;
+        _local4.alpha = 0.5;
+    }
+    function make_pie() {
+        _root._pie = new PieStyle(this, "pie");
+        _root._title = new Title(this);
+    }
+    function make_chart() {
+        _root._inner_background = new InnerBackground(this);
+        _root._min_max = new MinMax(this);
+        _root._x_offset = true;
+        if (this.x_offset != undefined) {
+            _root._x_offset = this.x_offset != "false";
+        }
+        _root._title = new Title(this);
+        _root._x_legend = new XLegend(this);
+        _root._y_legend = new YLegend(this, 1);
+        if (this.show_y2) {
+            _root._y2_legend = new YLegend(this, 2);
+        }
+        var _local3 = 5;
+        if (this.x_ticks != undefined) {
+            _local3 = Number(this.x_ticks);
+        }
+        var _local5 = new XLabelStyle(this);
+        var _local4 = new YLabelStyle(this, 1);
+        if (this.show_y2) {
+            var _local6 = new YLabelStyle(this, 2);
+        }
+        _root._x_axis_labels = new XAxisLabels(this, _local5, _root._min_max);
+        var _local7 = 1;
+        if (this.x_axis_steps != undefined) {
+            xStep = Number(this.x_axis_steps);
+        }
+        _root._x_axis = new XAxis(_local3, this, xStep);
+        _root._y_ticks = new YTicks(this);
+        _root._y_format = null;
+        if (this.y_format != undefined) {
+            _root._y_format = this.y_format;
+        }
+        _root._y_axis_labels = new YAxisLabels(_local4, _root._min_max.y_min, _root._min_max.y_max, _root._y_ticks.steps, 1, this);
+        if (this.show_y2) {
+            _root._y_axis_labels2 = new YAxisLabels(_local6, _root._min_max.y2_min, _root._min_max.y2_max, _root._y_ticks.steps, 2, this);
+        }
+        _root._y_axis = new YAxis(_root._y_ticks, this, _root._min_max.y_min, _root._min_max.y_max, _root._y_ticks.steps, 1);
+        if (this.show_y2) {
+            _root._y_axis2 = new YAxis(_root._y_ticks, this, _root._min_max.y_min, _root._min_max.y_max, _root._y_ticks.steps, 2);
+        }
+        _root.chartValues = new Values(this, _root._x_axis_labels.labels);
+        if (_root._min_max.has_x_range) {
+            _root._x_axis.set_grid_count((_root._min_max.x_max - _root._min_max.x_min) + 1);
+        } else {
+            _root._x_axis.set_grid_count(Math.max(_root._x_axis_labels.count(), _root.chartValues.length()));
+        }
+        _root._keys = new Keys((_root._y_legend.width() + _root._y_axis_labels.width()) + _root._y_axis.width(), _root._title.height(), _root.chartValues.styles);
+        _root.tooltip_x = new Tooltip();
+        _root._inv = new Invisible();
+    }
+    function LoadVarsOnLoad(success) {
+        if (!success) {
+            _root.loading.done();
+            _root.oops(_root.data);
+            return(undefined);
+        }
+        if (_root.oops != undefined) {
+            removeMovieClip("oops");
+        }
+        for (i in _root) {
+            if (typeof(_root[i]) == "movieclip") {
+                removeMovieClip(_root[i]);
+            }
+            delete i;
+        }
+        _root.css = new Css("margin-top: 30;margin-right: 40;");
+        NumberFormat.getInstance(this);
+        NumberFormat.getInstanceY2(this);
+        _root._background = new Background(this);
+        if (this.pie != undefined) {
+            this.make_pie();
+        } else {
+            this.make_chart();
+        }
+        if (this.tool_tip != undefined) {
+            _root.tool_tip_wrapper = this.tool_tip.replace("#comma#", ",");
+        }
+        _root.loading.done();
+        _root.move();
+    }
+    function move() {
+        if (_root._pie != undefined) {
+            _root._background.move();
+            _root._title.move();
+            _root._pie.draw(_root._title.height());
+            return(undefined);
+        }
+        _root._keys.move();
+        var _local6 = _root._title.height() + _root._keys.height();
+        var _local7 = (_root._y_legend.width() + _root._y_axis_labels.width()) + _root._y_axis.width();
+        var _local3 = Stage.width;
+        var _local4 = true;
+        if (_root._y_axis2 != undefined) {
+            _local3 = _local3 - ((_root._y2_legend.width() + _root._y_axis_labels2.width()) + _root._y_axis2.width());
+            _local4 = false;
+        }
+        var _local5 = Stage.height - ((_root._x_axis_labels.height() + _root._x_legend.height()) + _root._x_axis.height());
+        var _local2 = new Box(_local6, _local7, _local3, _local5, _root._min_max, _root._x_axis_labels.first_label_width(), _root._x_axis_labels.last_label_width(), _root._x_axis.get_grid_count(), _local4, _root._x_axis.three_d, _root._x_offset);
+        _root._background.move();
+        _root._inner_background.move(_local2);
+        _root._title.move();
+        _root._x_legend.move();
+        _root._y_legend.move(1);
+        if (_root._y_axis2 != undefined) {
+            _root._y2_legend.move(2);
+        }
+        _root._y_axis_labels.move(_root._y_legend.width(), _local2);
+        if (_root._y_axis2 != undefined) {
+            _root._y_axis_labels2.move(Stage.width - (_root._y2_legend.width() + _root._y_axis_labels2.width()), _local2);
+        }
+        _root._x_axis.move(_local2);
+        _root._x_axis_labels.move(Stage.height - (_root._x_legend.height() + _root._x_axis_labels.height()), _local2);
+        _root._y_axis.move(_local2, 1);
+        if (_root._y_axis2 != undefined) {
+            _root._y_axis2.move(_local2);
+        }
+        _root.chartValues.move(_local2, _root._min_max.y_min, _root._min_max.y_max, _root._min_max.y2_min, _root._min_max.y2_max);
+        _root._inv.move(_local2);
+    }
+    function setTitle(str) {
+        if (_root._title != undefined) {
+            _root._title.build(str);
+            _root.move();
+        }
+    }
+    function pushValue(set, val, label) {
+        if (set < _root.chartValues.length()) {
+            _root.chartValues.styles[set].add(Number(val), label);
+            _root._x_axis_labels.add(label);
+            _root._x_axis.set_grid_count(_root.chartValues.length());
+            _root.move();
+        }
+    }
+    function deleteValue(set) {
+        if (set < _root.chartValues.length()) {
+            _root.chartValues.styles[0].del();
+            _root._x_axis_labels.del();
+            _root._x_axis.set_grid_count(_root.chartValues.length());
+            _root.move();
+        }
+    }
+    function show_message(msg) {
+        _root.oops(msg);
+    }
+    function hide_message() {
+        hide_oops();
+    }
+    function reload(u) {
+        _root.loading = new Loading("Loading data...");
+        var _local2 = "";
+        if (_root.data != undefined) {
+            _local2 = _root.data;
+        }
+        if (u != undefined) {
+            if (u.length > 0) {
+                _local2 = u;
+            }
+        }
+        _root.lv = undefined;
+        _root.lv = new LoadVars();
+        _root.lv.onLoad = LoadVarsOnLoad;
+        _root.lv.make_chart = make_chart;
+        _root.lv.make_pie = make_pie;
+        _root.lv.load(_local2);
+    }
+    MovieClip.prototype.drawCircle = function (x, y, radius, accuracy) {
+        if (a < 3) {
+            a = 3;
+        }
+        var _local5 = Math.PI / accuracy;
+        var _local7 = radius / Math.cos(_local5);
+        var _local2 = 0;
+        var _local3 = 0;
+        this.moveTo(x + (Math.cos(_local2) * radius), y + (Math.sin(_local2) * radius));
+        var _local4 = 0;
+        while (_local4 < accuracy) {
+            _local3 = _local2 + _local5;
+            _local2 = _local3 + _local5;
+            this.curveTo(x + (Math.cos(_local3) * _local7), y + (Math.sin(_local3) * _local7), x + (Math.cos(_local2) * radius), y + (Math.sin(_local2) * radius));
+            _local4++;
+        }
+    };
+    MovieClip.prototype.fillCircle = function (x, y, radius, accuracy, colour) {
+        if (a < 3) {
+            a = 3;
+        }
+        var _local5 = Math.PI / accuracy;
+        var _local7 = radius / Math.cos(_local5);
+        var _local2 = 0;
+        var _local3 = 0;
+        this.moveTo(x + (Math.cos(_local2) * radius), y + (Math.sin(_local2) * radius));
+        this.beginFill(colour, 100);
+        var _local4 = 0;
+        while (_local4 < accuracy) {
+            _local3 = _local2 + _local5;
+            _local2 = _local3 + _local5;
+            this.curveTo(x + (Math.cos(_local3) * _local7), y + (Math.sin(_local3) * _local7), x + (Math.cos(_local2) * radius), y + (Math.sin(_local2) * radius));
+            _local4++;
+        }
+        this.endFill();
+    };
+    String.prototype.replace = function () {
+        var _local7 = arguments[0];
+        var _local6 = arguments[1];
+        var _local8 = this;
+        var _local5 = "";
+        var _local4 = _local8.split(_local7);
+        _local5 = _local4[0];
+        var _local3 = 1;
+        while (_local3 < _local4.length) {
+            _local5 = _local5 + (_local6 + _local4[_local3]);
+            _local3++;
+        }
+        return(_local5);
+    };
+    var TAB = 9;
+    var LINEFEED = 10;
+    var CARRIAGE = 13;
+    var SPACE = 32;
+    String.prototype.LTrim = function () {
+        var _local3 = this.toString();
+        var _local2 = 0;
+        while ((((_local3.charCodeAt(_local2) == SPACE) || (_local3.charCodeAt(_local2) == CARRIAGE)) || (_local3.charCodeAt(_local2) == LINEFEED)) || (_local3.charCodeAt(_local2) == TAB)) {
+            _local2++;
+        }
+        return(_local3.substring(_local2, _local3.length));
+    };
+    MovieClip.prototype.rect = function (x, y, width, height, colour, alpha) {
+        this.beginFill(colour, 100);
+        this.moveTo(x, y);
+        this.lineTo(x + width, y);
+        this.lineTo(x + width, y + height);
+        this.lineTo(x, y + height);
+        this.lineTo(x, y);
+        this.endFill();
+        this._alpha = alpha;
+        this._alpha_original = alpha;
+    };
+    MovieClip.prototype.rect2 = function (x, y, width, height, colour, alpha) {
+        this.beginFill(colour, alpha);
+        this.moveTo(x, y);
+        this.lineTo(x + width, y);
+        this.lineTo(x + width, y + height);
+        this.lineTo(x, y + height);
+        this.lineTo(x, y);
+        this.endFill();
+    };
+    flash.external.ExternalInterface.addCallback("set_title", null, setTitle);
+    flash.external.ExternalInterface.addCallback("push_value", null, pushValue);
+    flash.external.ExternalInterface.addCallback("delete_value", null, deleteValue);
+    flash.external.ExternalInterface.addCallback("show_message", null, show_message);
+    flash.external.ExternalInterface.addCallback("hide_message", null, hide_message);
+    flash.external.ExternalInterface.addCallback("reload", null, reload);
+    _root.loading = new Loading("Loading data...");
+    this.embedFonts = true;
+    _root.chartValues = new Array();
+    Stage.align = "LT";
+    Stage.scaleMode = "noScale";
+    var stageListener = new Object();
+    stageListener.onResize = function () {
+        _root.move();
+    };
+    Stage.addListener(stageListener);
+    setContextualMenu();
+    var lv = new LoadVars();
+    lv.onLoad = LoadVarsOnLoad;
+    lv.make_chart = make_chart;
+    lv.make_pie = make_pie;
+    if (_root.data == undefined) {
+        if (_root.variables == undefined) {
+            _root.data = "C:\\Users\\John\\Documents\\flash\\svn\\data-files\\data-13.txt";
+            lv.load(_root.data);
+        } else {
+            _root.LoadVarsOnLoad = LoadVarsOnLoad;
+            _root.LoadVarsOnLoad(true);
+        }
+    } else {
+        lv.load(_root.data);
+    }
+    stop();
+﻿
+//----------------------------------------------------------------------
+//Symbol 16 MovieClip [__Packages.Values] Frame 0
+//----------------------------------------------------------------------
+    class Values
+    {
+        var styles, attach_right;
+        function Values (lv, x_axis_labels) {
+            styles = [];
+            var _local2 = "";
+            var _local4 = 1;
+            do {
+                if (_local4 > 1) {
+                    _local2 = "_" + _local4;
+                }
+                if (lv["values" + _local2] != undefined) {
+                    styles[_local4 - 1] = make_style(lv, _local2, _local4);
+                    if (lv["candle" + _local2] != undefined) {
+                        styles[_local4 - 1].set_values(lv["values" + _local2], x_axis_labels, lv["links" + _local2]);
+                    } else if (lv["hlc" + _local2] != undefined) {
+                        styles[_local4 - 1].set_values(lv["values" + _local2], x_axis_labels, lv["links" + _local2]);
+                    }
+                } else {
+                    break;
+                }
+                _local4++;
+            } while  (true);
+            var _local6 = false;
+            var _local7;
+            attach_right = Array();
+            if (lv.show_y2 != undefined) {
+                if (lv.show_y2 != "false") {
+                    if (lv.y2_lines != undefined) {
+                        attach_right = lv.y2_lines.split(",");
+                    }
+                }
+            }
+        }
+        function make_style(lv, name, c) {
+            if (lv["line" + name] != undefined) {
+                return(new LineStyle(lv, name));
+            }
+            if (lv["line_dot" + name] != undefined) {
+                return(new LineDot(lv, name));
+            }
+            if (lv["line_hollow" + name] != undefined) {
+                return(new LineHollow(lv, name));
+            }
+            if (lv["area_hollow" + name] != undefined) {
+                return(new AreaHollow(lv, name));
+            }
+            if (lv["bar" + name] != undefined) {
+                return(new BarStyle(lv, name));
+            }
+            if (lv["filled_bar" + name] != undefined) {
+                return(new FilledBarStyle(lv, name));
+            }
+            if (lv["bar_glass" + name] != undefined) {
+                return(new BarGlassStyle(lv, name));
+            }
+            if (lv["bar_fade" + name] != undefined) {
+                return(new BarFade(lv, name));
+            }
+            if (lv["bar_zebra" + name] != undefined) {
+                return(new BarZebra(lv["bar_zebra" + name], "bar_" + c));
+            }
+            if (lv["bar_arrow" + name] != undefined) {
+                return(new BarArrow(lv, name));
+            }
+            if (lv["bar_3d" + name] != undefined) {
+                return(new Bar3D(lv, name));
+            }
+            if (lv["pie" + name] != undefined) {
+                return(new PieStyle(lv, name));
+            }
+            if (lv["candle" + name] != undefined) {
+                return(new CandleStyle(lv, name));
+            }
+            if (lv["scatter" + name] != undefined) {
+                return(new Scatter(lv, name));
+            }
+            if (lv["hlc" + name] != undefined) {
+                return(new HLCStyle(lv, name));
+            }
+            if (lv["bar_sketch" + name] != undefined) {
+                return(new BarSketchStyle(lv, name));
+            }
+        }
+        function parseVal(val) {
+            var _local3 = Array();
+            var _local2 = val.split(",");
+            var _local1 = 0;
+            while (_local1 < _local2.length) {
+                _local3.push(_local2[_local1]);
+                _local1++;
+            }
+            return(_local3);
+        }
+        function length() {
+            var _local3 = -1;
+            var _local2 = 0;
+            while (_local2 < styles.length) {
+                _local3 = Math.max(_local3, styles[_local2].values.length);
+                _local2++;
+            }
+            return(_local3);
+        }
+        function _count_bars() {
+            var _local3 = 0;
+            var _local2 = 0;
+            while (_local2 < styles.length) {
+                if (styles[_local2].is_bar) {
+                    _local3++;
+                }
+                _local2++;
+            }
+            return(_local3);
+        }
+        function is_right(y2lines, line) {
+            var _local3 = false;
+            var _local1 = 0;
+            while (_local1 < y2lines.length) {
+                if (y2lines[_local1] == line) {
+                    _local3 = true;
+                }
+                _local1++;
+            }
+            return(_local3);
+        }
+        function _do_it() {
+        }
+        function move(b, min, max, min2, max2) {
+            var _local5 = _count_bars();
+            var _local4 = 0;
+            var _local2 = 0;
+            while (_local2 < styles.length) {
+                var _local3 = false;
+                if (is_right(attach_right, _local2 + 1)) {
+                    _local3 = true;
+                }
+                styles[_local2].valPos(b, _local3, min, _local5, _local4);
+                if (styles[_local2].is_bar) {
+                    _local4++;
+                }
+                _local2++;
+            }
+            _local2 = 0;
+            while (_local2 < styles.length) {
+                styles[_local2].draw();
+                _local2++;
+            }
+        }
+        function mouse_move(x, y) {
+            var _local2 = 0;
+            while (_local2 < styles.length) {
+                if (styles[_local2].is_over(x, y)) {
+                    styles[_local2].fade_in();
+                }
+                _local2++;
+            }
+        }
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 33 MovieClip [__Packages.PieStyle] Frame 0
+//----------------------------------------------------------------------
+    class PieStyle extends Style
+    {
+        var labels, links, colours, name, label_line, easing, alpha, colour, style, pie_mcs, values, ExPoints;
+        function PieStyle (lv, name) {
+            super();
+            labels = new Array();
+            links = new Array();
+            colours = new Array();
+            this.name = "pie" + name;
+            parse(lv.pie);
+            labels = lv.pie_labels.split(",");
+            links = lv.links.split(",");
+            var _local6;
+            if (lv.colours != undefined) {
+                _local6 = lv.colours.split(",");
+            }
+            if (lv.colors != undefined) {
+                _local6 = lv.colours.split(",");
+            }
+            var _local4 = 0;
+            while (_local4 < _local6.length) {
+                colours.push(_root.get_colour(_local6[_local4]));
+                _local4++;
+            }
+            label_line = 10;
+            easing = mx.transitions.easing.Elastic.easeOut;
+            easing = mx.transitions.easing.Bounce.easeOut;
+            easing = mx.transitions.easing.Strong.easeInOut;
+            _local6 = parseVals(lv.values);
+            set_values(_local6);
+        }
+        function parse(val) {
+            var _local3 = val.split(",");
+            alpha = Number(_local3[0]);
+            colour = _root.get_colour(_local3[1]);
+            style = new Css(_local3[2]);
+            if (_local3.length > 3) {
+                gradientFill = _local3[3];
+            }
+            if (_local3.length > 4) {
+                border_width = _local3[4];
+            }
+        }
+        function parseVals(val) {
+            var _local3 = Array();
+            var _local2 = val.split(",");
+            var _local1 = 0;
+            while (_local1 < _local2.length) {
+                _local3.push(_local2[_local1]);
+                _local1++;
+            }
+            return(_local3);
+        }
+        function set_values(v) {
+            super.set_values(v);
+            pie_mcs = new Array(values.length);
+            var _local4 = 0;
+            while (_local4 < values.length) {
+                var _local5 = _root.createEmptyMovieClip((name + "_") + _local4, _root.getNextHighestDepth());
+                _local5.onRollOver = function () {
+                    ChartUtil.FadeIn(this, true);
+                };
+                _local5.onRollOut = function () {
+                    ChartUtil.FadeOut(this);
+                };
+                if (links.length > _local4) {
+                    _local5._ofc_link = links[_local4];
+                    _local5.onRelease = function () {
+                        trace(this._ofc_link);
+                        getURL (this._ofc_link);
+                    };
+                }
+                var _local6 = {x_label:labels[_local4], value:values[_local4], key:"??"};
+                _local5.tooltip = _local6;
+                pie_mcs[_local4] = _local5;
+                _local4++;
+            }
+            valPos();
+        }
+        function valPos() {
+            ExPoints = new Array();
+            var _local5 = 0;
+            var _local4 = 0;
+            var _local3 = 0;
+            while (_local3 < values.length) {
+                _local5 = _local5 + Number(values[_local3]);
+                _local3++;
+            }
+            _local3 = 0;
+            while (_local3 < values.length) {
+                var _local2 = (Number(values[_local3]) * 100) / _local5;
+                if (_local2 >= 0) {
+                    ExPoints.push(new ExPoint(_local4, 0, Number(values[_local3]), _local2, _local4, _local2));
+                }
+                _local4 = _local4 + _local2;
+                _local3++;
+            }
+        }
+        function draw(top) {
+            clear_mcs(Stage.width / 2, ((Stage.height - top) / 2) + top);
+            var _local11 = ((Stage.width < Stage.height) ? (Stage.width / 2) : ((Stage.height - top) / 2));
+            var _local8 = _local11 + label_line;
+            if ((labels.length > 0) && (style.get("display") != "none")) {
+                init_labels();
+                var _local6 = Array();
+                var _local2 = 0;
+                while (_local2 < ExPoints.length) {
+                    _local6.push(create_label(_local2, labels[_local2]));
+                    _local2++;
+                }
+                var _local7 = _local11;
+                var _local9 = _local11 * 0.1;
+                var _local5 = (_local7 + _local9) * 0.7;
+                _local8 = _local5 + label_line;
+                var _local12 = _local7 * 0.02;
+                if (_local12 < 2) {
+                    _local12 = 2;
+                }
+                var _local10 = 0;
+                var _local3 = false;
+                do {
+                    _local10 = _local10 + 1;
+                    _local2 = 0;
+                    while (_local2 < _local6.length) {
+                        var _local4 = ExPoints[_local2].bar_bottom + (ExPoints[_local2].bar_width / 2);
+                        _local3 = _local3 || (move_label(_local6[_local2], _local8, pie_mcs[_local2]._x, pie_mcs[_local2]._y, _local4));
+                        _local2++;
+                    }
+                    if (((_local7 - _local9) <= _local12) || (_local10 > 30)) {
+                        _local11 = _local5;
+                        trace("break");
+                        trace((("rad: " + _local11) + " iterations: ") + _local10);
+                        trace("--");
+                        break;
+                    }
+                    if (_local3) {
+                        _local7 = _local5;
+                    } else {
+                        _local9 = _local5;
+                    }
+                    _local5 = (_local7 + _local9) / 2;
+                    _local8 = _local5 + label_line;
+                    _local3 = false;
+                } while  (true);
+            }
+            draw_all(_local11);
+        }
+        function draw_all(rad) {
+            var _local2 = 0;
+            while (_local2 < ExPoints.length) {
+                draw_slice(pie_mcs[_local2], rad, colours[_local2 % colours.length], ExPoints[_local2].bar_width);
+                if ((labels.length > 0) && (style.get("display") != "none")) {
+                    draw_label_line(pie_mcs[_local2], rad, label_line, ExPoints[_local2].bar_width);
+                }
+                var _local3 = new mx.transitions.Tween(pie_mcs[_local2], "_rotation", easing, 0, 3.6 * ExPoints[_local2].bar_bottom, 120, false);
+                _local2++;
+            }
+        }
+        function clear_mcs(x, y) {
+            var _local3 = 0;
+            while (_local3 < ExPoints.length) {
+                var _local2 = pie_mcs[_local3];
+                _local2.clear();
+                _local2._x = x;
+                _local2._y = y;
+                _local2._alpha = alpha;
+                _local2._alpha_original = alpha;
+                _local3++;
+            }
+        }
+        function draw_label_line(pieSlice, rad, tick_size, slice_angle) {
+            pieSlice.lineStyle(1, colour, 100);
+            pieSlice.moveTo(rad * Math.cos(((slice_angle / 2) * 3.6) * TO_RADIANS), rad * Math.sin(((slice_angle / 2) * 3.6) * TO_RADIANS));
+            var _local6 = (rad + tick_size) * Math.cos(((slice_angle / 2) * 3.6) * TO_RADIANS);
+            var _local5 = (rad + tick_size) * Math.sin(((slice_angle / 2) * 3.6) * TO_RADIANS);
+            pieSlice.lineTo(_local6, _local5);
+        }
+        function init_labels() {
+            var _local3 = 0;
+            while (_local3 < ExPoints.length) {
+                if (_root["pie_text_" + _local3] != undefined) {
+                    _root["pie_text_" + _local3].removeTextField();
+                }
+                _local3++;
+            }
+        }
+        function create_label(num, label) {
+            var _local4 = _root.createTextField("pie_text_" + num, _root.getNextHighestDepth(), 0, 0, 10, 10);
+            _local4.text = label;
+            var _local3 = new TextFormat();
+            _local3.color = style.get("color");
+            _local3.font = "Verdana";
+            _local3.size = style.get("font-size");
+            _local3.align = "center";
+            _local4.setTextFormat(_local3);
+            _local4.autoSize = "left";
+            return(_local4);
+        }
+        function move_label(tf, rad, x, y, ang) {
+            var _local4 = x + (rad * Math.cos((ang * 3.6) * TO_RADIANS));
+            var _local3 = y + (rad * Math.sin((ang * 3.6) * TO_RADIANS));
+            if (_local4 < x) {
+                _local4 = _local4 - tf._width;
+            }
+            if (_local3 < y) {
+                _local3 = _local3 - tf._height;
+            }
+            tf._x = _local4;
+            tf._y = _local3;
+            if ((((tf._x > 0) && (tf._y > 0)) && ((tf._y + tf._height) < Stage.height)) && ((tf._x + tf._width) < Stage.width)) {
+                return(false);
+            }
+            return(true);
+        }
+        function draw_slice(pieSlice, r1, color, slice_angle) {
+            pieSlice.lineStyle(border_width, colour, 100);
+            if (gradientFill == "true") {
+                var _local15 = [color, color];
+                var _local12 = [100, 50];
+                var _local16 = [100, 255];
+                var _local13 = {a:r1 * 2, b:0, c:50, d:0, e:r1 * 2, f:0, g:-3, h:3, i:1};
+                pieSlice.beginGradientFill("radial", _local15, _local12, _local16, _local13);
+            } else {
+                pieSlice.beginFill(color, 100);
+            }
+            pieSlice.moveTo(0, 0);
+            pieSlice.lineTo(r1, 0);
+            var _local4 = 4;
+            var _local10 = Math.tan((_local4 / 2) * TO_RADIANS);
+            var _local2 = 0;
+            _local2 = 0;
+            while ((_local2 + _local4) < (slice_angle * 3.6)) {
+                var _local5 = r1 * Math.cos((_local2 + _local4) * TO_RADIANS);
+                var _local6 = r1 * Math.sin((_local2 + _local4) * TO_RADIANS);
+                var _local9 = _local5 + ((r1 * _local10) * Math.cos(((_local2 + _local4) - 90) * TO_RADIANS));
+                var _local8 = _local6 + ((r1 * _local10) * Math.sin(((_local2 + _local4) - 90) * TO_RADIANS));
+                pieSlice.curveTo(_local9, _local8, _local5, _local6);
+                _local2 = _local2 + _local4;
+            }
+            _local4 = 0.08;
+            _local10 = Math.tan((_local4 / 2) * TO_RADIANS);
+            while ((_local2 + _local4) < (slice_angle * 3.6)) {
+                var _local5 = r1 * Math.cos((_local2 + _local4) * TO_RADIANS);
+                var _local6 = r1 * Math.sin((_local2 + _local4) * TO_RADIANS);
+                var _local9 = _local5 + ((r1 * _local10) * Math.cos(((_local2 + _local4) - 90) * TO_RADIANS));
+                var _local8 = _local6 + ((r1 * _local10) * Math.sin(((_local2 + _local4) - 90) * TO_RADIANS));
+                pieSlice.curveTo(_local9, _local8, _local5, _local6);
+                _local2 = _local2 + _local4;
+            }
+            pieSlice.endFill();
+            pieSlice.lineTo(0, 0);
+        }
+        var TO_RADIANS = (Math.PI/180);
+        var gradientFill = "true";
+        var border_width = 1;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 3 MovieClip [__Packages.MinMax] Frame 0
+//----------------------------------------------------------------------
+    class MinMax
+    {
+        var y_max, y_min, y2_max, y2_min, has_x_range, x_max, x_min;
+        function MinMax (lv) {
+            if (lv.y_max == undefined) {
+                y_max = 10;
+            } else {
+                y_max = Number(lv.y_max);
+            }
+            if (lv.y_min == undefined) {
+                y_min = 0;
+            } else {
+                y_min = Number(lv.y_min);
+            }
+            if (lv.y2_max == undefined) {
+                y2_max = 10;
+            } else {
+                y2_max = Number(lv.y2_max);
+            }
+            if (lv.y2_min == undefined) {
+                y2_min = 0;
+            } else {
+                y2_min = Number(lv.y2_min);
+            }
+            if (y_min == y_max) {
+                y_max = y_max + 1;
+            }
+            if (y2_min == y2_max) {
+                y2_max = y2_max + 1;
+            }
+            has_x_range = false;
+            if (lv.x_max == undefined) {
+                x_max = 10;
+            } else {
+                has_x_range = true;
+                x_max = Number(lv.x_max);
+            }
+            if (lv.x_min == undefined) {
+                x_min = 0;
+            } else {
+                has_x_range = true;
+                x_min = Number(lv.x_min);
+            }
+        }
+        function range(right) {
+            if (right) {
+                return(y2_max - y2_min);
+            }
+            return(y_max - y_min);
+        }
+        function min(right) {
+            if (right) {
+                return(y2_min);
+            }
+            return(y_min);
+        }
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 42 MovieClip [__Packages.BarSketchStyle] Frame 0
+//----------------------------------------------------------------------
+    class BarSketchStyle extends FilledBarStyle
+    {
+        var name, set_values, alpha, offset, colour, outline_colour, key, font_size, bar_mcs;
+        function BarSketchStyle (lv, name) {
+            super();
+            this.name = "bar_sketch" + name;
+            parse(lv[this.name]);
+            set_values(lv["values" + name], lv["links" + name], lv["tool_tips_set" + name]);
+        }
+        function parse(val) {
+            var _local3 = val.split(",");
+            alpha = Number(_local3[0]);
+            offset = Number(_local3[1]);
+            colour = _root.get_colour(_local3[2]);
+            outline_colour = _root.get_colour(_local3[3]);
+            if (_local3.length > 4) {
+                key = _local3[4];
+            }
+            if (_local3.length > 5) {
+                font_size = Number(_local3[5]);
+            }
+        }
+        function draw_bar(val, i) {
+            var _local10;
+            var _local8;
+            if (val.bar_bottom < val.y) {
+                _local10 = val.bar_bottom;
+                _local8 = val.y - val.bar_bottom;
+            } else {
+                _local10 = val.y;
+                _local8 = val.bar_bottom - val.y;
+            }
+            var _local5 = bar_mcs[i];
+            _local5.clear();
+            var _local2 = offset;
+            var _local3 = _local2 / 2;
+            var _local9 = 6;
+            var _local6 = val.width / _local9;
+            _local5.lineStyle(_local6 + 1, colour, 85, true, "none", "round", "miter", 0.8);
+            i = 0;
+            while (i < _local9) {
+                _local5.moveTo(((_local6 * i) + (_local6 / 2)) + ((Math.random() * _local2) - _local3), 2 + ((Math.random() * _local2) - _local3));
+                _local5.lineTo(((_local6 * i) + (_local6 / 2)) + ((Math.random() * _local2) - _local3), (_local8 - 2) + ((Math.random() * _local2) - _local3));
+                i++;
+            }
+            _local5.lineStyle(2, outline_colour, 100);
+            _local5.moveTo((Math.random() * _local2) - _local3, (Math.random() * _local2) - _local3);
+            _local5.lineTo((Math.random() * _local2) - _local3, (_local8 + (Math.random() * _local2)) - _local3);
+            _local5.moveTo((Math.random() * _local2) - _local3, (Math.random() * _local2) - _local3);
+            _local5.lineTo(val.width + ((Math.random() * _local2) - _local3), (Math.random() * _local2) - _local3);
+            _local5.moveTo(val.width + ((Math.random() * _local2) - _local3), (Math.random() * _local2) - _local3);
+            _local5.lineTo(val.width + ((Math.random() * _local2) - _local3), _local8 + ((Math.random() * _local2) - _local3));
+            _local5.moveTo((Math.random() * _local2) - _local3, _local8 + ((Math.random() * _local2) - _local3));
+            _local5.lineTo(val.width + ((Math.random() * _local2) - _local3), _local8 + ((Math.random() * _local2) - _local3));
+            _local5._x = val.x;
+            _local5._y = _local10;
+            _local5._alpha = alpha;
+            _local5._alpha_original = alpha;
+        }
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 54 MovieClip [__Packages.Loading] Frame 0
+//----------------------------------------------------------------------
+    class Loading
+    {
+        function Loading (text) {
+            if (_root.loading != undefined) {
+                _root.removeMovieClip("loading");
+            }
+            var _local8 = _root.createEmptyMovieClip("loading", _root.getNextHighestDepth());
+            _local8.createTextField("txt", _local8.getNextHighestDepth(), 5, 5, 100, 100);
+            _local8.txt.text = text;
+            var _local14 = new TextFormat();
+            _local14.color = 0;
+            _local14.font = "Verdana";
+            _local14.size = 12;
+            _local14.align = "center";
+            _local8.txt.setTextFormat(_local14);
+            _local8.txt.autoSize = "left";
+            _local8.txt.setTextFormat(_local14);
+            _local8.onEnterFrame = function () {
+                this._x = (Stage.width / 2) - ((this.txt._width + 10) / 2);
+                this._y = (Stage.height / 2) - ((this.txt._height + 10) / 2);
+                delete this.onEnterFrame;
+            };
+            var _local15 = {width:2, color:8421504, alpha:100};
+            var _local16 = {color:15790320, alpha:100};
+            ChartUtil.rrectangle(_local8, _local8.txt._width + 10, _local8.txt._height + 10, 6, 0, 0, _local15, _local16);
+            var _local11 = _local8.createEmptyMovieClip("spinner", _local8.getNextHighestDepth());
+            _local11._x = _local8.txt._width + 40;
+            _local11._y = (_local8.txt._height + 10) / 2;
+            var _local10 = 15;
+            var _local9 = 6;
+            var _local13 = [15790320, 13684944, 11579568, 9474192, 7368816, 5263440, 3158064];
+            var _local3 = 0;
+            while (_local3 < _local9) {
+                var _local7 = (360 / _local9) * _local3;
+                var _local4 = _local7 * (Math.PI/180);
+                var _local6 = _local10 * Math.cos(_local4);
+                var _local5 = _local10 * Math.sin(_local4);
+                _local11.fillCircle(_local6, _local5, 4, 3, _local13[_local3]);
+                _local3++;
+            }
+            _local11.onEnterFrame = function () {
+                this._rotation = this._rotation + 5;
+            };
+            var _local12 = new flash.filters.DropShadowFilter();
+            _local12.blurX = 4;
+            _local12.blurY = 4;
+            _local12.distance = 4;
+            _local12.angle = 45;
+            _local12.quality = 2;
+            _local12.alpha = 0.5;
+            _local8.filters = [_local12];
+        }
+        function done() {
+            removeMovieClip("loading");
+        }
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 27 MovieClip [__Packages.FilledBarStyle] Frame 0
+//----------------------------------------------------------------------
+    class FilledBarStyle extends BarStyle
+    {
+        var name, set_values, alpha, colour, key, font_size;
+        function FilledBarStyle (lv, name) {
+            super();
+            this.name = "filled_bar" + name;
+            parse(lv[this.name]);
+            set_values(lv["values" + name], lv["links" + name], lv["tool_tips_set" + name]);
+        }
+        function parse(val) {
+            var _local3 = val.split(",");
+            alpha = Number(_local3[0]);
+            colour = _root.get_colour(_local3[1]);
+            outline_colour = _root.get_colour(_local3[2]);
+            if (_local3.length > 3) {
+                key = _local3[3];
+            }
+            if (_local3.length > 4) {
+                font_size = Number(_local3[4]);
+            }
+        }
+        function draw_bar(val, i) {
+            var _local4 = super.draw_bar(val, i);
+            var _local6;
+            var _local5;
+            if (val.bar_bottom < val.y) {
+                _local6 = val.bar_bottom;
+                _local5 = val.y - val.bar_bottom;
+            } else {
+                _local6 = val.y;
+                _local5 = val.bar_bottom - val.y;
+            }
+            _local4.lineStyle(2, outline_colour, 100);
+            _local4.moveTo(0, 0);
+            _local4.lineTo(val.width, 0);
+            _local4.lineTo(val.width, _local5);
+            _local4.lineTo(0, _local5);
+            _local4.lineTo(0, 0);
+            _local4._alpha = alpha;
+            _local4._alpha_original = alpha;
+        }
+        var is_bar = true;
+        var outline_colour = 0;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 36 MovieClip [__Packages.mx.transitions.easing.Strong] Frame 0
+//----------------------------------------------------------------------
+    class mx.transitions.easing.Strong
+    {
+        function Strong () {
+        }
+        static function easeIn(t, b, c, d) {
+            t = t / d;
+            return((((((c * t) * t) * t) * t) * t) + b);
+        }
+        static function easeOut(t, b, c, d) {
+            t = (t / d) - 1;
+            return((c * (((((t * t) * t) * t) * t) + 1)) + b);
+        }
+        static function easeInOut(t, b, c, d) {
+            t = t / (d / 2);
+            if (t < 1) {
+                return(((((((c / 2) * t) * t) * t) * t) * t) + b);
+            }
+            t = t - 2;
+            return(((c / 2) * (((((t * t) * t) * t) * t) + 2)) + b);
+        }
+        static var version = "1.1.0.52";
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 20 MovieClip [__Packages.LineHollow] Frame 0
+//----------------------------------------------------------------------
+    class LineHollow extends LineStyle
+    {
+        var mcs, values, name, line_width, colour, key, font_size, circle_size, mc2, set_values, ExPoints, mc;
+        function LineHollow (lv, name) {
+            super();
+            mcs = [];
+            values = [];
+            bgColour = _root.get_background_colour();
+            this.name = "line_hollow" + name;
+            var _local4 = lv[this.name].split(",");
+            line_width = Number(_local4[0]);
+            colour = _root.get_colour(_local4[1]);
+            if (_local4.length > 2) {
+                key = _local4[2];
+            }
+            if (_local4.length > 3) {
+                font_size = Number(_local4[3]);
+            }
+            if (length(_local4) > 4) {
+                circle_size = Number(_local4[4]);
+            }
+            mc2 = _root.createEmptyMovieClip(name + "_hightlight", _root.getNextHighestDepth());
+            mc2.lineStyle(0, 0, 0);
+            mc2.fillCircle(0, 0, circle_size + 2, 15, colour);
+            mc2.fillCircle(0, 0, (circle_size - line_width) + 2, 15, bgColour);
+            mc2._visible = false;
+            set_values(lv["values" + name].split(","));
+        }
+        function draw() {
+            super.draw();
+            if (circle_size == 0) {
+                return(undefined);
+            }
+            var _local4 = 0;
+            while (_local4 < ExPoints.length) {
+                var _local3 = ExPoints[_local4];
+                mc.lineStyle(0, 0, 0);
+                mc.fillCircle(_local3.x, _local3.y, circle_size, 15, colour);
+                mc.fillCircle(_local3.x, _local3.y, circle_size - line_width, 15, bgColour);
+                _local4++;
+            }
+        }
+        var bgColour = 0;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 2 MovieClip [__Packages.Box] Frame 0
+//----------------------------------------------------------------------
+    class Box
+    {
+        var minmax, x_offset;
+        function Box (top, left, right, bottom, minmax, x_left_label_width, x_right_label_width, count, jiggle, three_d, x_offset) {
+            var _local2 = left;
+            if (jiggle) {
+                right = this.jiggle(left, right, x_right_label_width, count);
+                _local2 = shrink_left(left, right, x_left_label_width, count);
+            }
+            this.top = top;
+            this.left = Math.max(left, _local2);
+            this.right = Math.floor(right);
+            this.bottom = bottom;
+            width = this.right - this.left;
+            height = bottom - top;
+            this.count = count;
+            this.minmax = minmax;
+            if (three_d) {
+                tick_offset = 12;
+            }
+            this.x_offset = x_offset;
+            if (!this.x_offset) {
+                this.count--;
+            }
+        }
+        function jiggle(left, right, x_label_width, count) {
+            var _local3 = 0;
+            if (x_label_width != 0) {
+                var _local2 = (right - left) / count;
+                _local3 = right - (_local2 / 2);
+                var _local1 = right;
+                while ((_local3 + (x_label_width / 2)) > right) {
+                    _local1 = _local1 - 1;
+                    _local2 = (_local1 - left) / count;
+                    _local3 = _local1 - (_local2 / 2);
+                }
+                right = _local1;
+            }
+            return(right);
+        }
+        function shrink_left(left, right, x_label_width, count) {
+            var _local3 = 0;
+            if (x_label_width != 0) {
+                var _local2 = (right - left) / count;
+                _local3 = left + (_local2 / 2);
+                var _local1 = left;
+                while ((_local3 - (x_label_width / 2)) < 0) {
+                    _local1 = _local1 + 1;
+                    _local2 = (right - _local1) / count;
+                    _local3 = _local1 + (_local2 / 2);
+                }
+                left = _local1;
+            }
+            return(left);
+        }
+        function getYbottom(right_axis) {
+            var _local2 = minmax.min(right_axis);
+            return(getY(Math.max(0, _local2), right_axis));
+        }
+        function getY_old(i, right_axis) {
+            var _local2 = height / minmax.range(right_axis);
+            var _local3 = bottom - (_local2 * (minmax.min(right_axis) * -1));
+            _local3 = _local3 - (i * _local2);
+            return(_local3);
+        }
+        function getY(i, right_axis) {
+            var _local2 = height / minmax.range(right_axis);
+            var _local4 = bottom;
+            return(bottom - (((minmax.min(right_axis) - i) * _local2) * -1));
+        }
+        function width_() {
+            return(right - left_());
+        }
+        function left_() {
+            var _local2 = tick_offset;
+            return(left + _local2);
+        }
+        function get_x_pos_of_val(i) {
+            var _local2 = width_() / count;
+            var _local4 = i - minmax.x_min;
+            var _local3 = 0;
+            if (x_offset) {
+                _local3 = _local2 / 2;
+            }
+            return((left_() + _local3) + (_local4 * _local2));
+        }
+        function get_x_pos(i) {
+            var _local2 = width_() / count;
+            var _local3 = 0;
+            if (x_offset) {
+                _local3 = _local2 / 2;
+            }
+            return((left_() + _local3) + (i * _local2));
+        }
+        function get_x_tick_pos(i) {
+            return(get_x_pos(i) - tick_offset);
+        }
+        function make_point(x, y, right_axis) {
+            return(new Point(get_x_pos(x), getY(y, right_axis), y));
+        }
+        function make_point_2(x, y, right_axis) {
+            return(new Point(get_x_pos_of_val(x), getY(y, right_axis), y));
+        }
+        function make_point_bar(x, y, right_axis, group, group_count) {
+            var _local2 = width_() / count;
+            var _local3 = _local2 * 0.8;
+            var _local5 = 0;
+            if (x_offset) {
+                _local5 = _local2;
+            }
+            var _local7 = left_() + ((_local5 - _local3) / 2);
+            var _local4 = _local3 / group_count;
+            var _local6 = _local7 + (x * _local2);
+            _local6 = _local6 + (_local4 * group);
+            return(new PointBar(_local6, getY(y, right_axis), _local4 - 0.001, getYbottom(right_axis)));
+        }
+        function make_point_candle(x, high, open, close, low, right_axis, group, group_count) {
+            var _local2 = width_() / count;
+            var _local4 = _local2 * 0.8;
+            var _local7 = left_() + ((_local2 - _local4) / 2);
+            var _local5 = _local4 / group_count;
+            var _local6 = _local7 + (x * _local2);
+            _local6 = _local6 + (_local5 * group);
+            return(new PointCandle(_local6, getY(high, right_axis), getY(open, right_axis), getY(close, right_axis), getY(low, right_axis), high, _local5, open));
+        }
+        function makePointHLC(x, high, close, low, right_axis, group, group_count) {
+            var _local2 = width_() / count;
+            var _local3 = _local2 * 1;
+            var _local7 = left_() + ((_local2 - _local3) / 2);
+            var _local4 = _local3 / group_count;
+            var _local5 = _local7 + (x * _local2);
+            _local5 = _local5 + (_local4 * group);
+            return(new PointHLC(_local5, getY(high, right_axis), getY(close, right_axis), getY(low, right_axis), high, _local4, close));
+        }
+        var top = 0;
+        var left = 0;
+        var right = 0;
+        var bottom = 0;
+        var width = 0;
+        var height = 0;
+        var tick_offset = 0;
+        var count = 0;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 28 MovieClip [__Packages.BarGlassStyle] Frame 0
+//----------------------------------------------------------------------
+    class BarGlassStyle extends BarStyle
+    {
+        var name, set_values, alpha, colour, key, font_size, bar_mcs;
+        function BarGlassStyle (lv, name) {
+            super();
+            this.name = "bar_glass" + name;
+            parse(lv[this.name]);
+            set_values(lv["values" + name], lv["links" + name]);
+        }
+        function parse(val) {
+            var _local3 = val.split(",");
+            alpha = Number(_local3[0]);
+            colour = _root.get_colour(_local3[1]);
+            outline_colour = _root.get_colour(_local3[2]);
+            if (_local3.length > 3) {
+                key = _local3[3];
+            }
+            if (_local3.length > 4) {
+                font_size = Number(_local3[4]);
+            }
+        }
+        function glass(mc, val) {
+            var _local3 = 3;
+            var _local2 = _local3;
+            var _local8 = (val.width / 2) - _local3;
+            var _local6 = val.bar_bottom - val.y;
+            if (_local6 > 0) {
+                _local6 = _local6 - 4;
+            } else {
+                _local6 = _local6 + 4;
+                _local2 = -_local2;
+            }
+            var _local12 = [16777215, 16777215];
+            var _local10 = [30, 70];
+            var _local13 = [0, 255];
+            var _local11 = {matrixType:"box", x:_local3, y:_local2, w:_local8, h:_local6, r:Math.PI};
+            mc.beginGradientFill("linear", _local12, _local10, _local13, _local11);
+            mc.lineStyle(0, 0, 0);
+            var _local5 = 3;
+            var _local7 = _local8;
+            var _local4 = _local6;
+            if (_local4 > 0) {
+                mc.moveTo(_local3 + _local5, _local2);
+                mc.lineTo(_local3 + _local7, _local2);
+                mc.lineTo(_local3 + _local7, _local2 + _local4);
+                mc.lineTo(_local3 + _local5, _local2 + _local4);
+                mc.curveTo(_local3, _local2 + _local4, _local3, (_local2 + _local4) - _local5);
+                mc.lineTo(_local3, _local2 + _local5);
+            } else {
+                mc.moveTo(_local3 + _local5, _local2);
+                mc.lineTo(_local3 + _local7, _local2);
+                mc.lineTo(_local3 + _local7, _local2 + _local4);
+                mc.lineTo(_local3, _local2 + _local4);
+                mc.lineTo(_local3, _local2 - _local5);
+            }
+            mc.endFill();
+        }
+        function bg(mc, val) {
+            var _local4 = val.width;
+            var _local5 = val.bar_bottom - val.y;
+            var _local8 = val.x;
+            var _local7 = val.y;
+            var _local3 = 7;
+            mc.lineStyle(0, outline_colour, 100);
+            mc.beginFill(colour, 100);
+            if (_local5 > 0) {
+                mc.moveTo(0 + _local3, 0);
+                mc.lineTo(_local4 - _local3, 0);
+                mc.curveTo(_local4, 0, _local4, _local3);
+                mc.lineTo(_local4, _local5);
+                mc.lineTo(0, _local5);
+                mc.lineTo(0, 0 + _local3);
+                mc.curveTo(0, 0, 0 + _local3, 0);
+            } else {
+                mc.moveTo(0 + _local3, 0);
+                mc.lineTo(_local4 - _local3, 0);
+                mc.curveTo(_local4, 0, _local4, -_local3);
+                mc.lineTo(_local4, _local5);
+                mc.lineTo(0, _local5);
+                mc.lineTo(0, -_local3);
+                mc.curveTo(0, 0, 0 + _local3, 0);
+            }
+            mc.endFill();
+            mc._x = _local8;
+            mc._y = _local7;
+        }
+        function draw_bar(val, i) {
+            var _local3 = bar_mcs[i];
+            _local3.clear();
+            if (val == null) {
+                return(undefined);
+            }
+            bg(_local3, val);
+            glass(_local3, val);
+            var _local2 = new flash.filters.DropShadowFilter();
+            _local2.blurX = 5;
+            _local2.blurY = 5;
+            _local2.distance = 3;
+            _local2.angle = 45;
+            _local2.quality = 2;
+            _local2.alpha = 0.4;
+            _local3.filters = [_local2];
+            _local3._alpha = alpha;
+            _local3._alpha_original = alpha;
+        }
+        var is_bar = true;
+        var outline_colour = 0;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 15 MovieClip [__Packages.XAxis] Frame 0
+//----------------------------------------------------------------------
+    class XAxis
+    {
+        var tick, grid_colour, axis_colour, three_d, three_d_height, alt_axis_step, alt_axis_colour, grid_count, x_steps, mc;
+        function XAxis (tick, lv, steps) {
+            this.tick = tick;
+            if (lv.x_grid_colour != undefined) {
+                grid_colour = _root.get_colour(lv.x_grid_colour);
+            } else {
+                grid_colour = 16114090 /* 0xF5E1AA */;
+            }
+            if (lv.x_axis_colour != undefined) {
+                axis_colour = _root.get_colour(lv.x_axis_colour);
+            } else {
+                axis_colour = 7880726 /* 0x784016 */;
+            }
+            if (lv.x_axis_3d != undefined) {
+                three_d = true;
+                three_d_height = int(lv.x_axis_3d);
+            } else {
+                three_d = false;
+            }
+            var _local4 = lv.x_label_style.split(",");
+            if (_local4.length > 4) {
+                alt_axis_step = _local4[3];
+                alt_axis_colour = _root.get_colour(_local4[4]);
+            }
+            grid_count = 1;
+            if (steps == undefined) {
+                x_steps = 1;
+            } else {
+                x_steps = steps;
+            }
+            mc = _root.createEmptyMovieClip("x_axis", _root.getNextHighestDepth());
+        }
+        function set_grid_count(val) {
+            grid_count = val;
+        }
+        function get_grid_count(val) {
+            return(grid_count);
+        }
+        function move(box) {
+            mc.clear();
+            var _local2 = 0;
+            while (_local2 < grid_count) {
+                if ((alt_axis_step > 1) && ((_local2 % alt_axis_step) == 0)) {
+                    mc.lineStyle(1, alt_axis_colour, 100);
+                } else {
+                    mc.lineStyle(1, grid_colour, 100);
+                }
+                var _local3 = box.get_x_pos(_local2);
+                mc.moveTo(_local3, box.bottom);
+                mc.lineTo(_local3, box.top);
+                mc.moveTo(_local3, box.bottom);
+                mc.lineTo(_local3, box.top);
+                _local2 = _local2 + x_steps;
+            }
+            if (three_d) {
+                three_d_axis(mc, box);
+            } else {
+                two_d_axis(mc, box);
+            }
+        }
+        function three_d_axis(mc, box) {
+            var _local9 = three_d_height;
+            var _local6 = 12;
+            var _local4 = _local9 + _local6;
+            var _local16 = box.width / grid_count;
+            this.mc.lineStyle(1, axis_colour, 100);
+            var _local19 = 1;
+            var _local5 = 0;
+            while (_local5 < grid_count) {
+                var _local3 = box.get_x_tick_pos(_local5);
+                this.mc.moveTo(_local3, box.bottom + _local4);
+                this.mc.lineTo(_local3 + _local19, box.bottom + _local4);
+                this.mc.lineTo(_local3 + _local19, (box.bottom + _local4) + tick);
+                this.mc.lineTo(_local3, (box.bottom + _local4) + tick);
+                this.mc.lineTo(_local3, box.bottom + _local4);
+                _local5 = _local5 + x_steps;
+            }
+            mc.lineStyle(0, 0, 0);
+            var _local7 = ChartUtil.Lighten(axis_colour);
+            var _local12 = [axis_colour, _local7];
+            var _local10 = [100, 100];
+            var _local13 = [0, 255];
+            var _local11 = {matrixType:"box", x:box.left - _local6, y:box.bottom, w:box.width_(), h:_local6, r:4.71238898038469};
+            mc.beginGradientFill("linear", _local12, _local10, _local13, _local11);
+            this.mc.moveTo(box.left, box.bottom);
+            this.mc.lineTo(box.right, box.bottom);
+            this.mc.lineTo(box.right - _local6, box.bottom + _local6);
+            this.mc.lineTo(box.left - _local6, box.bottom + _local6);
+            this.mc.endFill();
+            _local12 = [axis_colour, _local7];
+            _local10 = [100, 100];
+            _local13 = [0, 255];
+            _local11 = {matrixType:"box", x:box.left - _local6, y:box.bottom + _local6, w:box.width_(), h:_local9, r:4.71238898038469};
+            mc.beginGradientFill("linear", _local12, _local10, _local13, _local11);
+            this.mc.moveTo(box.left - _local6, box.bottom + _local6);
+            this.mc.lineTo(box.right - _local6, box.bottom + _local6);
+            this.mc.lineTo(box.right - _local6, (box.bottom + _local6) + _local9);
+            this.mc.lineTo(box.left - _local6, (box.bottom + _local6) + _local9);
+            this.mc.endFill();
+            _local12 = [axis_colour, _local7];
+            _local10 = [100, 100];
+            _local13 = [0, 255];
+            _local11 = {matrixType:"box", x:box.left - _local6, y:box.bottom + _local6, w:box.width_(), h:_local9, r:3.92699081698724};
+            mc.beginGradientFill("linear", _local12, _local10, _local13, _local11);
+            this.mc.moveTo(box.right, box.bottom);
+            this.mc.lineTo(box.right, box.bottom + _local9);
+            this.mc.lineTo(box.right - _local6, (box.bottom + _local6) + _local9);
+            this.mc.lineTo(box.right - _local6, box.bottom + _local6);
+            this.mc.endFill();
+        }
+        function two_d_axis(mc, box) {
+            var _local5 = box.width / grid_count;
+            var _local6 = box.left + (_local5 / 2);
+            this.mc.lineStyle(2, axis_colour, 100);
+            var _local2 = 0;
+            while (_local2 < grid_count) {
+                var _local4 = box.get_x_tick_pos(_local2);
+                this.mc.moveTo(_local4, box.bottom);
+                this.mc.lineTo(_local4, box.bottom + tick);
+                _local2 = _local2 + x_steps;
+            }
+            this.mc.lineStyle(2, axis_colour, 100);
+            this.mc.moveTo(box.left, box.bottom);
+            this.mc.lineTo(box.right, box.bottom);
+        }
+        function height_() {
+            return(2 + tick);
+        }
+        function height() {
+            if (three_d) {
+                return((three_d_height + 12) + tick);
+            }
+            return(tick);
+        }
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 48 MovieClip [__Packages.YAxisLabels] Frame 0
+//----------------------------------------------------------------------
+    class YAxisLabels
+    {
+        var steps, labels, right;
+        function YAxisLabels (y_label_style, min, max, steps, nr, lv) {
+            this.steps = steps;
+            labels = Array();
+            right = nr == 2;
+            var _local8 = "";
+            if (!right) {
+                if (!y_label_style.show_labels) {
+                    return;
+                }
+                _local8 = "y_label_";
+            } else {
+                if (!lv.show_y2) {
+                    return;
+                }
+                if (!y_label_style.show_labels) {
+                    return;
+                }
+                _local8 = "y_label_2_";
+            }
+            var _local11 = (max - min) / this.steps;
+            var _local10 = 0;
+            var _local3 = min;
+            while (_local3 <= max) {
+                var _local4 = _root.format_y_axis_label(_local3);
+                var _local5 = {textfield:yAxisLabel(_local4, _local8 + String(_local10++), y_label_style, nr), value:_local3};
+                labels.push(_local5);
+                _local3 = _local3 + _local11;
+            }
+        }
+        function yAxisLabel(title, name, y_label_style) {
+            if (_root[name] != undefined) {
+                _root[name].removeTextField();
+            }
+            var _local3 = _root.createTextField(name, _root.getNextHighestDepth(), 0, 0, 100, 100);
+            _local3.text = title;
+            var _local2 = new TextFormat();
+            _local2.color = y_label_style.colour;
+            _local2.font = "Verdana";
+            _local2.size = y_label_style.size;
+            _local2.align = "right";
+            _local3.setTextFormat(_local2);
+            _local3.autoSize = "right";
+            return(_local3);
+        }
+        function move(left, box) {
+            var _local4 = width();
+            var _local2 = 0;
+            while (_local2 < labels.length) {
+                var _local3 = labels[_local2].textfield;
+                _local3._x = (left - _local3._width) + _local4;
+                _local2++;
+            }
+            _local2 = 0;
+            while (_local2 < labels.length) {
+                var _local3 = labels[_local2].textfield;
+                _local3._y = box.getY(labels[_local2].value, right) - (_local3._height / 2);
+                _local2++;
+            }
+        }
+        function width() {
+            var _local4 = 0;
+            var _local2 = 0;
+            while (_local2 < labels.length) {
+                var _local3 = labels[_local2].textfield;
+                _local4 = Math.max(_local4, _local3._width);
+                _local2++;
+            }
+            return(_local4);
+        }
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 55 MovieClip [__Packages.Keys] Frame 0
+//----------------------------------------------------------------------
+    class Keys
+    {
+        var key_mcs;
+        function Keys (left, top, styles) {
+            this.left = left;
+            this.top = top;
+            key_mcs = Array();
+            var _local4 = 0;
+            var _local2 = 0;
+            while (_local2 < styles.length) {
+                if ((styles[_local2].font_size > 0) and (styles[_local2].key != "")) {
+                    key_mcs.push(make_key(styles[_local2], _local4));
+                    _local4++;
+                }
+                _local2++;
+            }
+            count = _local4;
+            move();
+        }
+        function del() {
+            var _local2 = 0;
+            while (_local2 < key_mcs.length) {
+                removeMovieClip(key_mcs[_local2]);
+                _local2++;
+            }
+        }
+        function make_key(st, c) {
+            var _local7 = "_key_block" + c;
+            var _local2 = _root.createEmptyMovieClip(_local7, _root.getNextHighestDepth());
+            var _local6 = _local2.createTextField("txt", _root.getNextHighestDepth(), 10, 0, 100, 100);
+            _local6.text = st.key;
+            var _local4 = new TextFormat();
+            _local4.color = st.colour;
+            _local4.font = "Verdana";
+            _local4.size = st.font_size;
+            _local4.align = "left";
+            _local6.setTextFormat(_local4);
+            _local6.autoSize = "left";
+            var _local5 = (_local2.txt._height / 2) - (st.line_width / 2);
+            _local2.beginFill(st.colour, 100);
+            _local2.moveTo(0, _local5);
+            _local2.lineTo(10, _local5);
+            _local2.lineTo(10, _local5 + st.line_width);
+            _local2.lineTo(0, _local5 + st.line_width);
+            _local2.endFill();
+            _local2._height = _local2.txt._height;
+            return(_local2);
+        }
+        function move() {
+            if (count == 0) {
+                return(undefined);
+            }
+            var _local6 = 0;
+            var _local3 = left;
+            var _local5 = top;
+            var _local2 = 0;
+            while (_local2 < key_mcs.length) {
+                var _local4 = key_mcs[_local2]._width;
+                if ((_local3 + _local4) > Stage.width) {
+                    _local3 = left;
+                    _local5 = _local5 + key_mcs[_local2]._height;
+                    _local6 = _local6 + key_mcs[_local2]._height;
+                }
+                key_mcs[_local2]._x = _local3;
+                key_mcs[_local2]._y = _local5;
+                _local3 = _local3 + (_local4 + 10);
+                _local2++;
+            }
+            _local6 = _local6 + key_mcs[0]._height;
+            _height = _local6;
+        }
+        function height() {
+            return(_height);
+        }
+        var _height = 0;
+        var left = 0;
+        var top = 0;
+        var count = 0;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 53 MovieClip [__Packages.XLegend] Frame 0
+//----------------------------------------------------------------------
+    class XLegend extends Title
+    {
+        var size, colour, title, mc;
+        function XLegend (lv) {
+            super();
+            if (lv.x_legend == undefined) {
+                return;
+            }
+            var _local4 = lv.x_legend.split(",");
+            var _local5 = _local4[0].replace("#comma#", ",");
+            size = Number(_local4[1]);
+            colour = _root.get_colour(_local4[2]);
+            build(_local5);
+        }
+        function build(text) {
+            title = text;
+            if (mc == undefined) {
+                mc = _root.createTextField("title", _root.getNextHighestDepth(), 0, 0, 200, 200);
+            }
+            mc.text = title;
+            var _local3 = new TextFormat();
+            _local3.color = colour;
+            _local3.font = "Verdana";
+            _local3.size = size;
+            _local3.align = "center";
+            mc.setTextFormat(_local3);
+            mc.autoSize = "left";
+        }
+        function get_legend() {
+            return(title);
+        }
+        function move() {
+            super.move();
+            mc._y = Stage.height - mc._height;
+        }
+        function height() {
+            if (mc == undefined) {
+                return(0);
+            }
+            return(mc._height);
+        }
+        var name = "x_legend";
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 11 MovieClip [__Packages.Background] Frame 0
+//----------------------------------------------------------------------
+    class Background
+    {
+        var mc, img_mc, img_x, img_y;
+        function Background (lv) {
+            if (lv.bg_colour != undefined) {
+                colour = _root.get_colour(lv.bg_colour);
+            } else {
+                colour = 16316632 /* 0xF8F8D8 */;
+            }
+            mc = _root.createEmptyMovieClip("background", _root.getNextHighestDepth(), 0, 0, Stage.width, Stage.height);
+            if (lv.bg_image != undefined) {
+                img_mc = _root.createEmptyMovieClip("background_img", _root.getNextHighestDepth(), 0, 0, Stage.width, Stage.height);
+                if (lv.bg_image_x != undefined) {
+                    img_x = lv.bg_image_x;
+                }
+                if (lv.bg_image_y != undefined) {
+                    img_y = lv.bg_image_y;
+                }
+                var ref = this;
+                var loader = new MovieClipLoader();
+                loader.addListener({onLoadInit:function (mymc) {
+                    ref.positionize(mymc, ref.img_x, ref.img_y, new Square(0, 0, Stage.width, Stage.height));
+                    delete loader;
+                }});
+                loader.loadClip(lv.bg_image, img_mc);
+            }
+        }
+        function positionize(mc, myX, myY, s) {
+            var _local3 = 0;
+            var _local2 = 0;
+            if (isNaN(myX)) {
+                myX.toLowerCase();
+                switch (myX) {
+                    case "center" : 
+                        _local3 = (s.width / 2) - (mc._width / 2);
+                        break;
+                    case "left" : 
+                        _local3 = s.left;
+                        break;
+                    case "right" : 
+                        _local3 = s.right - mc._width;
+                        break;
+                    default : 
+                        _local3 = 0;
+                }
+            } else if (myX < 0) {
+                _local3 = (s.right - mc._width) - myX;
+            } else {
+                _local3 = s.left + myX;
+            }
+            if (isNaN(myY)) {
+                myY.toLowerCase();
+                switch (myY) {
+                    case "middle" : 
+                        _local2 = (s.height / 2) - (mc._height / 2);
+                        break;
+                    case "top" : 
+                        _local2 = s.top;
+                        break;
+                    case "bottom" : 
+                        _local2 = s.bottom - mc._height;
+                        break;
+                    default : 
+                        _local2 = 0;
+                }
+            } else if (myY < 0) {
+                _local2 = (s.bottom - mc._height) - myY;
+            } else {
+                _local2 = s.top + myY;
+            }
+            mc._x = _local3;
+            mc._y = _local2;
+        }
+        function move() {
+            mc.clear();
+            mc.beginFill(colour, 100);
+            mc.moveTo(0, 0);
+            mc.lineTo(Stage.width, 0);
+            mc.lineTo(Stage.width, Stage.height);
+            mc.lineTo(0, Stage.height);
+            mc.endFill();
+            if ((img_mc != undefined) and (img_mc._width != undefined)) {
+                positionize(img_mc, img_x, img_y, new Square(0, 0, Stage.width, Stage.height));
+            }
+        }
+        var colour = 0;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 40 MovieClip [__Packages.PointScatter] Frame 0
+//----------------------------------------------------------------------
+    class PointScatter extends Point
+    {
+        function PointScatter () {
+            super();
+        }
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 37 MovieClip [__Packages.ExPoint] Frame 0
+//----------------------------------------------------------------------
+    class ExPoint
+    {
+        function ExPoint (left, center, y, width, bar_bottom, tooltip) {
+            this.left = left;
+            this.center = center;
+            this.y = y;
+            bar_width = width;
+            this.bar_bottom = bar_bottom;
+            this.tooltip = _root.format(tooltip);
+        }
+        function toString() {
+            return("left :" + left);
+        }
+        var left = 0;
+        var center = 0;
+        var y = 0;
+        var tooltip = "";
+        var bar_width = 0;
+        var bar_bottom = 0;
+        var is_tip = false;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 21 MovieClip [__Packages.AreaHollow] Frame 0
+//----------------------------------------------------------------------
+    class AreaHollow extends LineHollow
+    {
+        var bgColour, name, line_width, circle_size, colour, key, font_size, fill_colour, mc_area, mc, mc2, set_values, ExPoints;
+        function AreaHollow (lv, name) {
+            super();
+            bgColour = _root.get_background_colour();
+            this.name = "area_hollow" + name;
+            var _local4 = lv[this.name].split(",");
+            line_width = Number(_local4[0]);
+            circle_size = Number(_local4[1]);
+            alpha = Number(_local4[2]);
+            colour = _root.get_colour(_local4[3]);
+            if (_local4.length > 4) {
+                key = _local4[4];
+            }
+            if (_local4.length > 5) {
+                font_size = Number(_local4[5]);
+            }
+            if (_local4.length > 6) {
+                fill_colour = _root.get_colour(_local4[6]);
+            } else {
+                fill_colour = colour;
+            }
+            mc_area = _root.createEmptyMovieClip(name + "_area", _root.getNextHighestDepth());
+            mc = _root.createEmptyMovieClip(name, _root.getNextHighestDepth());
+            mc2 = _root.createEmptyMovieClip(name + "_hightlight", _root.getNextHighestDepth());
+            mc2.lineStyle(0, 0, 0);
+            mc2.fillCircle(0, 0, circle_size + 2, 15, colour);
+            mc2.fillCircle(0, 0, (circle_size - line_width) + 2, 15, bgColour);
+            mc2._visible = false;
+            set_values(lv["values" + name].split(","));
+        }
+        function valPos(b, right_axis, min) {
+            bottom = b.getYbottom(right_axis);
+            super.valPos(b, right_axis, min);
+        }
+        function draw() {
+            var _local6 = 0;
+            if (fill_colour == "") {
+                fill_colour = colour;
+            }
+            mc_area.clear();
+            mc_area.beginFill(fill_colour, alpha);
+            var _local4 = 0;
+            while (ExPoints[_local4] == null) {
+                _local4++;
+            }
+            mc_area.moveTo(ExPoints[_local4].x, bottom);
+            mc_area.lineTo(ExPoints[_local4].x, ExPoints[_local4].y);
+            var _local5 = null;
+            var _local3 = _local4 + 1;
+            while (_local3 < ExPoints.length) {
+                if (ExPoints[_local3] != null) {
+                    mc_area.lineTo(ExPoints[_local3].x, ExPoints[_local3].y);
+                    _local5 = ExPoints[_local3];
+                }
+                _local3++;
+            }
+            if (_local5 != null) {
+                mc_area.lineTo(_local5.x, bottom);
+            }
+            mc_area.endFill();
+            super.draw();
+        }
+        var bottom = -1;
+        var alpha = 50;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 34 MovieClip [__Packages.Css] Frame 0
+//----------------------------------------------------------------------
+    class Css
+    {
+        var margin_top, margin_bottom, margin_left, margin_right, color, stop_process, text_align, font_size, text_decoration, font_weight, font_style, font_family, bg_colour, display, margin, padding;
+        function Css (txt) {
+            txt.toLowerCase();
+            txt = txt.replace("{", "");
+            txt = txt.replace("}", "");
+            margin_top = 0;
+            margin_bottom = 0;
+            margin_left = 0;
+            margin_right = 0;
+            color = "#000000";
+            var _local3 = txt.split(";");
+            var _local2 = 0;
+            while (_local2 < _local3.length) {
+                getAttribute(_local3[_local2]);
+                _local2++;
+            }
+        }
+        function trim(txt) {
+            var _local3 = 0;
+            var _local2 = txt.length - 1;
+            while ((txt.charAt(_local3) == " ") or (txt.charAt(_local3) == "\t")) {
+                _local3++;
+            }
+            while ((txt.charAt(_local2) == " ") or (txt.charAt(_local2) == "\t")) {
+                _local2--;
+            }
+            return(txt.substring(_local3, _local2 + 1));
+        }
+        function removeDoubleSpaces(txt) {
+            var _local1;
+            var _local2;
+            _local1 = txt;
+            do {
+                _local2 = _local1;
+                _local1.replace("  ", " ");
+            } while  (_local2.length != _local1.length);
+            return(_local1);
+        }
+        function ToNumber(cad) {
+            cad = cad.replace("px", "");
+            if (isNaN(Number(cad))) {
+                return(0);
+            }
+            return(Number(cad));
+        }
+        function getAttribute(txt) {
+            var _local2 = txt.split(":");
+            if (_local2.length == 2) {
+                stop_process = 1;
+                set(_local2[0], trim(_local2[1]));
+            }
+        }
+        function get(cad) {
+            switch (cad) {
+                case "text-align" : 
+                    return(text_align);
+                case "font-size" : 
+                    return(ToNumber(font_size));
+                case "text-decoration" : 
+                    return(text_decoration);
+                case "margin-top" : 
+                    return(margin_top);
+                case "margin-bottom" : 
+                    return(margin_bottom);
+                case "margin-left" : 
+                    return(margin_left);
+                case "margin-right" : 
+                    return(margin_right);
+                case "padding-top" : 
+                    return(padding_top);
+                case "padding-bottom" : 
+                    return(padding_bottom);
+                case "padding-left" : 
+                    return(padding_left);
+                case "padding-right" : 
+                    return(padding_right);
+                case "font-weight" : 
+                    return(ToNumber(font_weight));
+                case "font-style" : 
+                    return(font_style);
+                case "font-family" : 
+                    return(font_family);
+                case "color" : 
+                    return(color);
+                case "background-color" : 
+                    return(bg_colour);
+                case "display" : 
+                    return(display);
+            }
+            return(0);
+        }
+        function set(cad, val) {
+            cad = trim(cad);
+            switch (cad) {
+                case "text-align" : 
+                    text_align = val;
+                    break;
+                case "font-size" : 
+                    font_size = val;
+                    break;
+                case "text-decoration" : 
+                    text_decoration = val;
+                    break;
+                case "margin" : 
+                    margin = setMargin(val);
+                    break;
+                case "margin-top" : 
+                    margin_top = ToNumber(val);
+                    break;
+                case "margin-bottom" : 
+                    margin_bottom = ToNumber(val);
+                    break;
+                case "margin-left" : 
+                    margin_left = ToNumber(val);
+                    break;
+                case "margin-right" : 
+                    margin_right = ToNumber(val);
+                    break;
+                case "padding" : 
+                    padding = setPadding(val);
+                    break;
+                case "padding-top" : 
+                    padding_top = ToNumber(val);
+                    break;
+                case "padding-bottom" : 
+                    padding_bottom = ToNumber(val);
+                    break;
+                case "padding-left" : 
+                    padding_left = ToNumber(val);
+                    break;
+                case "padding-right" : 
+                    padding_right = ToNumber(val);
+                    break;
+                case "font-weight" : 
+                    font_weight = val;
+                    break;
+                case "font-style" : 
+                    font_style = val;
+                    break;
+                case "font-family" : 
+                    font_family = val;
+                    break;
+                case "color" : 
+                    color = _root.get_colour(val);
+                    break;
+                case "background-color" : 
+                    bg_colour = _root.get_colour(val);
+                    break;
+                case "display" : 
+                    display = val;
+            }
+        }
+        function setPadding(val) {
+            val = trim(val);
+            var _local2 = val.split(" ");
+            switch (_local2.length) {
+                case 1 : 
+                    padding_top = ToNumber(_local2[0]);
+                    padding_right = ToNumber(_local2[0]);
+                    padding_bottom = ToNumber(_local2[0]);
+                    padding_left = ToNumber(_local2[0]);
+                    break;
+                case 2 : 
+                    padding_top = ToNumber(_local2[0]);
+                    padding_right = ToNumber(_local2[1]);
+                    padding_bottom = ToNumber(_local2[0]);
+                    padding_left = ToNumber(_local2[1]);
+                    break;
+                case 3 : 
+                    padding_top = ToNumber(_local2[0]);
+                    padding_right = ToNumber(_local2[1]);
+                    padding_bottom = ToNumber(_local2[2]);
+                    padding_left = ToNumber(_local2[1]);
+                    break;
+                default : 
+                    padding_top = ToNumber(_local2[0]);
+                    padding_right = ToNumber(_local2[1]);
+                    padding_bottom = ToNumber(_local2[2]);
+                    padding_left = ToNumber(_local2[3]);
+            }
+        }
+        function setMargin(val) {
+            val = trim(val);
+            var _local2 = val.split(" ");
+            switch (_local2.length) {
+                case 1 : 
+                    margin_top = ToNumber(_local2[0]);
+                    margin_right = ToNumber(_local2[0]);
+                    margin_bottom = ToNumber(_local2[0]);
+                    margin_left = ToNumber(_local2[0]);
+                    break;
+                case 2 : 
+                    margin_top = ToNumber(_local2[0]);
+                    margin_right = ToNumber(_local2[1]);
+                    margin_bottom = ToNumber(_local2[0]);
+                    margin_left = ToNumber(_local2[1]);
+                    break;
+                case 3 : 
+                    margin_top = ToNumber(_local2[0]);
+                    margin_right = ToNumber(_local2[1]);
+                    margin_bottom = ToNumber(_local2[2]);
+                    margin_left = ToNumber(_local2[1]);
+                    break;
+                default : 
+                    margin_top = ToNumber(_local2[0]);
+                    margin_right = ToNumber(_local2[1]);
+                    margin_bottom = ToNumber(_local2[2]);
+                    margin_left = ToNumber(_local2[3]);
+            }
+        }
+        function clear() {
+            text_align = undefined;
+            font_size = undefined;
+            text_decoration = undefined;
+            margin_top = undefined;
+            margin_bottom = undefined;
+            margin_left = undefined;
+            margin_right = undefined;
+            font_weight = undefined;
+            font_style = undefined;
+            font_family = undefined;
+            color = undefined;
+            display = undefined;
+        }
+        var padding_top = 0;
+        var padding_bottom = 0;
+        var padding_left = 0;
+        var padding_right = 0;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 56 MovieClip [__Packages.YLegend] Frame 0
+//----------------------------------------------------------------------
+    class YLegend
+    {
+        function YLegend (lv, nr) {
+            if ((lv.y_legend == undefined) && (lv.y2_legend == undefined)) {
+                return;
+            }
+            if (nr == 2) {
+                var _local4 = lv.y2_legend.split(",");
+            } else {
+                var _local4 = lv.y_legend.split(",");
+            }
+            var _local5 = _local4[0].replace("#comma#", ",");
+            var _local7 = Number(_local4[1]);
+            var _local8 = _root.get_colour(_local4[2]);
+            if (_local5 == undefined) {
+                return;
+            }
+            if (nr == 1) {
+                mc = _root.createTextField("y_legend", _root.getNextHighestDepth(), 0, 0, 200, 200);
+            } else {
+                mc = _root.createTextField("y2_legend", _root.getNextHighestDepth(), 0, 0, 200, 200);
+            }
+            mc.text = _local5;
+            mc.embedFonts = true;
+            var _local3 = new TextFormat();
+            _local3.color = _local8;
+            _local3.font = "Verdana_embed";
+            _local3.size = _local7;
+            _local3.align = "center";
+            mc.setTextFormat(_local3);
+            mc.autoSize = "left";
+            mc._rotation = 270;
+            mc.autoSize = "left";
+        }
+        function move(nr) {
+            if (mc == undefined) {
+                return(undefined);
+            }
+            mc._y = (Stage.height / 2) + (mc._height / 2);
+            if (nr == 2) {
+                mc._x = Stage.width - mc._width;
+            } else {
+                mc._x = 0;
+            }
+        }
+        function width() {
+            if (mc == undefined) {
+                return(0);
+            }
+            return(mc._width);
+        }
+        var mc = undefined;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 8 MovieClip [__Packages.PointBar] Frame 0
+//----------------------------------------------------------------------
+    class PointBar extends Point
+    {
+        var width, bar_bottom, y, x;
+        function PointBar (x, y, width, bar_bottom) {
+            super(x, y);
+            this.width = width;
+            this.bar_bottom = bar_bottom;
+        }
+        function get_tip_pos() {
+            return({x:x + (width / 2), y:y});
+        }
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 39 MovieClip [__Packages.Scatter] Frame 0
+//----------------------------------------------------------------------
+    class Scatter extends Style
+    {
+        var name, line_width, colour, key, font_size, circle_size, mc, mc2, values, ExPoints;
+        function Scatter (lv, name) {
+            super();
+            bgColour = _root.get_background_colour();
+            this.name = "scatter" + name;
+            var _local4 = lv[this.name].split(",");
+            line_width = Number(_local4[0]);
+            colour = _root.get_colour(_local4[1]);
+            if (_local4.length > 2) {
+                key = _local4[2];
+            }
+            if (_local4.length > 3) {
+                font_size = Number(_local4[3]);
+            }
+            if (length(_local4) > 4) {
+                circle_size = Number(_local4[4]);
+            }
+            mc = _root.createEmptyMovieClip(name, _root.getNextHighestDepth());
+            mc2 = _root.createEmptyMovieClip(name, _root.getNextHighestDepth());
+            mc2.fillCircle(0, 0, 7, 15, 16777215);
+            mc2.fillCircle(0, 0, 5, 15, colour);
+            mc2._visible = false;
+            set_values(lv["values" + name]);
+        }
+        function parse_group(g) {
+            var _local2 = g.split(",");
+            values.push({x:Number(_local2[0]), y:Number(_local2[1]), size:Number(_local2[2])});
+        }
+        function groups(vals) {
+            var _local5 = new Array();
+            var _local2 = "";
+            var _local3 = false;
+            var _local1 = 0;
+            while (_local1 < vals.length) {
+                switch (vals.charAt(_local1)) {
+                    case "[" : 
+                        _local3 = true;
+                        break;
+                    case "]" : 
+                        _local3 = false;
+                        _local5.push(_local2);
+                        _local2 = "";
+                        break;
+                    default : 
+                        if (!_local3) { 
+                            break;
+                        }
+                        _local2 = _local2 + vals.charAt(_local1);
+                }
+                _local1++;
+            }
+            return(_local5);
+        }
+        function set_values(v) {
+            values = new Array();
+            var _local3 = groups(v);
+            var _local2 = 0;
+            while (_local2 < _local3.length) {
+                parse_group(_local3[_local2]);
+                _local2++;
+            }
+        }
+        function valPos(b, right_axis, min) {
+            ExPoints = Array();
+            var _local8 = "";
+            if (_root._x_legend != undefined) {
+                var _local4 = 0;
+                while (_local4 < values.length) {
+                    var _local3 = values[_local4];
+                    var _local5 = b.make_point_2(_local3.x, _local3.y, right_axis);
+                    _local5.size = _local3.size;
+                    _local5.make_tooltip(_root.get_tooltip_string(), key, Number(_local3.y), _root.get_x_legend(), _local3.x);
+                    ExPoints.push(_local5);
+                    _local4++;
+                }
+            }
+        }
+        function draw() {
+            mc.clear();
+            mc.lineStyle(line_width, colour, 100);
+            var _local3 = 0;
+            while (_local3 < ExPoints.length) {
+                var _local2 = ExPoints[_local3];
+                mc.lineStyle(0, 0, 0);
+                mc.fillCircle(_local2.x, _local2.y, _local2.size, 15, colour);
+                mc.fillCircle(_local2.x, _local2.y, _local2.size - line_width, 15, bgColour);
+                _local3++;
+            }
+        }
+        function highlight_value() {
+            var _local3 = false;
+            var _local2 = 0;
+            while (_local2 < ExPoints.length) {
+                if (ExPoints[_local2].is_tip) {
+                    mc2._x = ExPoints[_local2].x;
+                    mc2._y = ExPoints[_local2].y;
+                    mc2._visible = true;
+                    _local3 = true;
+                    break;
+                }
+                _local2++;
+            }
+            if (!_local3) {
+                mc2._visible = false;
+            }
+        }
+        function rollOver() {
+        }
+        function closest(x, y) {
+            var _local3 = Number.MAX_VALUE;
+            var _local2 = 0;
+            while (_local2 < ExPoints.length) {
+                ExPoints[_local2].is_tip = false;
+                var _local5 = Math.abs(x - ExPoints[_local2].x);
+                if (_local5 < _local3) {
+                    _local3 = _local5;
+                }
+                _local2++;
+            }
+            var _local4 = Array();
+            _local2 = 0;
+            while (_local2 < ExPoints.length) {
+                var _local5 = Math.abs(x - ExPoints[_local2].x);
+                if (_local5 == _local3) {
+                    _local4.push(ExPoints[_local2]);
+                }
+                _local2++;
+            }
+            var _local8 = _local3;
+            _local3 = Number.MAX_VALUE;
+            var _local12 = null;
+            _local2 = 0;
+            while (_local2 < _local4.length) {
+                var _local9 = Math.abs(y - _local4[_local2].y);
+                if (_local9 < _local3) {
+                    _local3 = _local9;
+                    _local12 = _local4[_local2];
+                }
+                _local2++;
+            }
+            var _local9 = Math.abs(y - _local12.y);
+            return({point:_local12, distance_x:_local8, distance_y:_local9});
+        }
+        function move_dot(val, mc) {
+            mc._x = val.x;
+            mc._y = val.y;
+        }
+        function is_over(x, y) {
+            if (x < 0) {
+                mc2._visible = false;
+            }
+        }
+        var bgColour = 0;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 14 MovieClip [__Packages.Invisible] Frame 0
+//----------------------------------------------------------------------
+    class Invisible
+    {
+        var mc, link;
+        function Invisible (lv) {
+            mc = _root.createEmptyMovieClip("tooltipX_mouse_out", _root.getNextHighestDepth());
+            mc.onRollOut = function () {
+                _root.mouse_over(false);
+                _root.tooltip_x.hide();
+            };
+            mc.onMouseMove = _root.mouse_move;
+            var tmp = this;
+            mc.onRelease = function () {
+                trace("Click " + tmp.link);
+                if (tmp.link != undefined) {
+                    getURL (tmp.link);
+                }
+            };
+            mc.useHandCursor = false;
+        }
+        function move(b) {
+            mc.clear();
+            mc.rect2(0, 0, b.width, b.height, 0, 0);
+            mc._x = b.left;
+            mc._y = b.top;
+        }
+        function hitTest(x, y) {
+            return(mc.hitTest(x, y));
+        }
+        function use_hand(link) {
+            mc.useHandCursor = true;
+            this.link = link;
+        }
+        function use_arrow() {
+            mc.useHandCursor = false;
+            link = undefined;
+        }
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 51 MovieClip [__Packages.XLabelStyle] Frame 0
+//----------------------------------------------------------------------
+    class XLabelStyle
+    {
+        var show_labels;
+        function XLabelStyle (lv) {
+            if (lv.x_label_style == undefined) {
+                return;
+            }
+            var _local5 = lv.x_label_style.lastIndexOf(",");
+            if (_local5 < 0) {
+                var _local6 = lv.x_label_style.lastIndexOf("none", 0);
+                if (_local6 > -1) {
+                    show_labels = false;
+                }
+            } else {
+                show_labels = true;
+                var _local3 = lv.x_label_style.split(",");
+                if (_local3.length > 0) {
+                    size = _local3[0];
+                }
+                if (_local3.length > 1) {
+                    colour = _root.get_colour(_local3[1]);
+                }
+                if (_local3.length > 2) {
+                    vertical = Number(_local3[2]) == 1;
+                    diag = Number(_local3[2]) == 2;
+                }
+                if (_local3.length > 3) {
+                    if (Number(_local3[3]) > 0) {
+                        step = Number(_local3[3]);
+                    }
+                }
+            }
+        }
+        var size = 10;
+        var colour = 0;
+        var vertical = false;
+        var diag = false;
+        var step = 1;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 32 MovieClip [__Packages.Bar3D] Frame 0
+//----------------------------------------------------------------------
+    class Bar3D extends BarStyle
+    {
+        var name, parse_bar, set_values, colour, bar_mcs, alpha;
+        function Bar3D (lv, name) {
+            super();
+            this.name = "bar_3d" + name;
+            parse_bar(lv[this.name]);
+            set_values(lv["values" + name], lv["links" + name]);
+        }
+        function top(mc, val) {
+            var _local6 = val.width;
+            var _local5 = val.bar_bottom - val.y;
+            mc.lineStyle(0, outline_colour, 0);
+            var _local9 = ChartUtil.Lighten(colour);
+            var _local10 = [colour, _local9];
+            var _local7 = [100, 100];
+            var _local11 = [0, 255];
+            var _local8 = {matrixType:"box", x:0, y:0, w:_local6 + 12, h:12, r:4.71238898038469};
+            mc.beginGradientFill("linear", _local10, _local7, _local11, _local8);
+            var _local3 = 0;
+            if (_local5 < 0) {
+                _local3 = _local5;
+            }
+            mc.moveTo(0, _local3);
+            mc.lineTo(_local6, _local3);
+            mc.lineTo(_local6 - 12, _local3 + 12);
+            mc.lineTo(-12, _local3 + 12);
+            mc.endFill();
+            mc._x = val.x;
+            mc._y = val.y;
+        }
+        function front(mc, val) {
+            var _local5 = val.width;
+            var _local4 = val.bar_bottom - val.y;
+            var _local15 = val.x;
+            var _local14 = val.y;
+            var _local13 = 7;
+            var _local8 = ChartUtil.Lighten(colour);
+            var _local9 = [_local8, colour];
+            var _local6 = [100, 100];
+            var _local10 = [0, 127];
+            var _local7 = {matrixType:"box", x:-12, y:12, w:_local5 - 12, h:_local4 + 12, r:(Math.PI/2)};
+            mc.beginGradientFill("linear", _local9, _local6, _local10, _local7);
+            mc.moveTo(-12, 12);
+            mc.lineTo(-12, _local4 + 12);
+            mc.lineTo(_local5 - 12, _local4 + 12);
+            mc.lineTo(_local5 - 12, 12);
+            mc.endFill();
+        }
+        function side(mc, val) {
+            var _local3 = val.width;
+            var _local5 = val.bar_bottom - val.y;
+            var _local15 = val.x;
+            var _local14 = val.y;
+            var _local13 = 7;
+            var _local8 = ChartUtil.Lighten(colour);
+            var _local9 = [colour, _local8];
+            var _local6 = [100, 100];
+            var _local10 = [0, 255];
+            var _local7 = {matrixType:"box", x:_local3 - 12, y:0, w:_local3, h:_local5 + 12, r:4.71238898038469};
+            mc.beginGradientFill("linear", _local9, _local6, _local10, _local7);
+            mc.lineStyle(0, outline_colour, 0);
+            mc.moveTo(_local3, 0);
+            mc.lineTo(_local3, _local5);
+            mc.lineTo(_local3 - 12, _local5 + 12);
+            mc.lineTo(_local3 - 12, 12);
+            mc.endFill();
+        }
+        function draw_bar(val, i) {
+            var _local2 = bar_mcs[i];
+            _local2.clear();
+            top(_local2, val);
+            front(_local2, val);
+            side(_local2, val);
+            var _local3 = new flash.filters.DropShadowFilter();
+            _local3.blurX = 5;
+            _local3.blurY = 5;
+            _local3.distance = 3;
+            _local3.angle = 45;
+            _local3.quality = 2;
+            _local3.alpha = 0.4;
+            _local2._alpha = alpha;
+            _local2._alpha_original = alpha;
+            _local2.val = val;
+        }
+        var is_bar = true;
+        var outline_colour = 0;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 17 MovieClip [__Packages.Style] Frame 0
+//----------------------------------------------------------------------
+    class Style
+    {
+        var values;
+        function Style (val, bar) {
+        }
+        function set_values(v) {
+            values = v;
+        }
+        function add(val, tool_tip) {
+            values.push(val);
+        }
+        function del() {
+            values.shift();
+        }
+        function draw(val, mc) {
+        }
+        function highlight_value() {
+        }
+        function closest(x, y) {
+        }
+        var key = "";
+        var font_size = -1;
+        var colour = 0;
+        var line_width = 1;
+        var circle_size = 0;
+        var is_bar = false;
+        var alpha = 50;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 9 MovieClip [__Packages.PointCandle] Frame 0
+//----------------------------------------------------------------------
+    class PointCandle extends Point
+    {
+        var width, high, open, close, low, tooltip, y, x;
+        function PointCandle (x, high, open, close, low, tooltip, width) {
+            super(x, high, tooltip);
+            this.width = width;
+            this.high = high;
+            this.open = open;
+            this.close = close;
+            this.low = low;
+        }
+        function make_tooltip(tip, key, val, x_legend, x_axis_label) {
+            super.make_tooltip(tip, key, val.open, x_legend, x_axis_label);
+            var _local4 = tooltip;
+            _local4 = _local4.replace("#high#", _root.format(val.high));
+            _local4 = _local4.replace("#open#", _root.format(val.open));
+            _local4 = _local4.replace("#close#", _root.format(val.close));
+            _local4 = _local4.replace("#low#", _root.format(val.low));
+            tooltip = _local4;
+        }
+        function get_tip_pos() {
+            return({x:x + (width / 2), y:y});
+        }
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 22 MovieClip [__Packages.BarStyle] Frame 0
+//----------------------------------------------------------------------
+    class BarStyle extends Style
+    {
+        var name, alpha, colour, key, font_size, values, bar_mcs, links, tooltips, ExPoints;
+        function BarStyle (lv, name) {
+            super();
+            this.name = "bar" + name;
+            parse_bar(lv[this.name]);
+            set_values(lv["values" + name], lv["links" + name], lv["tool_tips_set" + name]);
+        }
+        function parse_bar(val) {
+            var _local3 = val.split(",");
+            alpha = Number(_local3[0]);
+            colour = _root.get_colour(_local3[1]);
+            if (_local3.length > 2) {
+                key = _local3[2].replace("#comma#", ",");
+            }
+            if (_local3.length > 3) {
+                font_size = Number(_local3[3]);
+            }
+        }
+        function set_values(vals, links, tooltips) {
+            super.set_values(parse_list(vals));
+            set_links(links);
+            set_tooltips(tooltips);
+            set_mcs(values.length);
+        }
+        function set_mcs(count) {
+            if (bar_mcs != undefined) {
+                var _local3 = 0;
+                while (_local3 < bar_mcs.length) {
+                    _root.removeMovieClip(bar_mcs[_local3]._name);
+                    _local3++;
+                }
+            }
+            bar_mcs = new Array(count);
+            var _local3 = 0;
+            while (_local3 < count) {
+                var _local4 = _root.createEmptyMovieClip((name + "_") + _local3, _root.getNextHighestDepth());
+                _local4._is_over = false;
+                bar_mcs[_local3] = _local4;
+                _local3++;
+            }
+        }
+        function set_links(links) {
+            if (links != undefined) {
+                this.links = links.split(",");
+            } else {
+                this.links = Array();
+            }
+        }
+        function set_tooltips(tooltips) {
+            if (tooltips != undefined) {
+                this.tooltips = tooltips.split(",");
+            } else {
+                this.tooltips = Array();
+            }
+        }
+        function parse_list(val) {
+            var _local3 = Array();
+            var _local2 = val.split(",");
+            var _local1 = 0;
+            while (_local1 < _local2.length) {
+                _local3.push(_local2[_local1]);
+                _local1++;
+            }
+            return(_local3);
+        }
+        function is_over(x, y) {
+            var _local3 = 0;
+            while (_local3 < bar_mcs.length) {
+                var _local4 = bar_mcs[_local3];
+                if (_local4.hitTest(x, y)) {
+                    if (!_local4._is_over) {
+                        _local4._is_over = true;
+                        if (links[_local3] != undefined) {
+                            _root.is_over(links[_local3]);
+                        }
+                        var _local5 = new mx.transitions.Tween(bar_mcs[_local3], "_alpha", mx.transitions.easing.Elastic.easeOut, bar_mcs[_local3]._alpha_original, 100, 60, false);
+                    }
+                } else if (_local4._is_over) {
+                    _local4._is_over = false;
+                    _root.is_out();
+                    var _local5 = new mx.transitions.Tween(bar_mcs[_local3], "_alpha", mx.transitions.easing.Elastic.easeOut, 100, bar_mcs[_local3]._alpha_original, 60, false);
+                }
+                _local3++;
+            }
+        }
+        function valPos(b, right_axis, min, bar_count, bar) {
+            ExPoints = Array();
+            var _local3 = 0;
+            while (_local3 < values.length) {
+                if (values[_local3] != "null") {
+                    var _local4 = b.make_point_bar(_local3, Number(values[_local3]), right_axis, bar, bar_count);
+                    _local4.make_tooltip(_root.get_tooltip_string(), key, Number(values[_local3]), _root.get_x_legend(), _root.get_x_axis_label(_local3), tooltips[_local3]);
+                    ExPoints.push(_local4);
+                } else {
+                    ExPoints.push(null);
+                }
+                _local3++;
+            }
+        }
+        function draw() {
+            var _local2 = 0;
+            while (_local2 < ExPoints.length) {
+                draw_bar(ExPoints[_local2], _local2);
+                _local2++;
+            }
+        }
+        function draw_bar(val, i) {
+            var _local5;
+            var _local4;
+            if (val.bar_bottom < val.y) {
+                _local5 = val.bar_bottom;
+                _local4 = val.y - val.bar_bottom;
+            } else {
+                _local5 = val.y;
+                _local4 = val.bar_bottom - val.y;
+            }
+            var _local2 = bar_mcs[i];
+            _local2.clear();
+            _local2.beginFill(colour, 100);
+            _local2.moveTo(0, 0);
+            _local2.lineTo(val.width, 0);
+            _local2.lineTo(val.width, _local4);
+            _local2.lineTo(0, _local4);
+            _local2.lineTo(0, 0);
+            _local2.endFill();
+            _local2._x = val.x;
+            _local2._y = _local5;
+            _local2._alpha = alpha;
+            _local2._alpha_original = alpha;
+            return(_local2);
+        }
+        function closest(x, y) {
+            var _local5 = Number.MAX_VALUE;
+            var _local8 = null;
+            var _local2 = 0;
+            while (_local2 < ExPoints.length) {
+                ExPoints[_local2].is_tip = false;
+                if ((x > ExPoints[_local2].x) && (x < (ExPoints[_local2].x + ExPoints[_local2].width))) {
+                    _local5 = Math.min(Math.abs(x - ExPoints[_local2].x), Math.abs(x - (ExPoints[_local2].x + ExPoints[_local2].width)));
+                    _local8 = ExPoints[_local2];
+                    break;
+                }
+                var _local7 = Math.abs(x - ExPoints[_local2].x);
+                var _local6 = Math.abs(x - (ExPoints[_local2].x + ExPoints[_local2].width));
+                var _local4 = Math.min(_local7, _local6);
+                if (_local4 < _local5) {
+                    _local5 = _local4;
+                    _local8 = ExPoints[_local2];
+                }
+                _local2++;
+            }
+            var _local9 = Math.abs(y - _local8.y);
+            return({point:_local8, distance_x:_local5, distance_y:_local9});
+        }
+        var is_bar = true;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 10 MovieClip [__Packages.PointHLC] Frame 0
+//----------------------------------------------------------------------
+    class PointHLC extends Point
+    {
+        var width, high, close, low, tooltip, y, x;
+        function PointHLC (x, high, close, low, tooltip, width) {
+            super(x, high, tooltip);
+            this.width = width;
+            this.high = high;
+            this.close = close;
+            this.low = low;
+        }
+        function make_tooltip(tip, key, val, x_legend, x_axis_label) {
+            super.make_tooltip(tip, key, val.close, x_legend, x_axis_label);
+            var _local3 = tooltip;
+            _local3 = _local3.replace("#high#", NumberUtils.formatNumber(val.high));
+            _local3 = _local3.replace("#close#", NumberUtils.formatNumber(val.close));
+            _local3 = _local3.replace("#low#", NumberUtils.formatNumber(val.low));
+            tooltip = _local3;
+        }
+        function get_tip_pos() {
+            return({x:x + (width / 2), y:y});
+        }
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 5 MovieClip [__Packages.NumberUtils] Frame 0
+//----------------------------------------------------------------------
+    class NumberUtils
+    {
+        function NumberUtils () {
+        }
+        static function formatNumber(i) {
+            var _local1 = NumberFormat.getInstance(null);
+            return(format(i, _local1.numDecimals, _local1.isFixedNumDecimalsForced, _local1.isDecimalSeparatorComma, _local1.isThousandSeparatorDisabled));
+        }
+        static function formatNumberY2(i) {
+            var _local1 = NumberFormat.getInstanceY2(null);
+            return(format(i, _local1.numDecimals, _local1.isFixedNumDecimalsForced, _local1.isDecimalSeparatorComma, _local1.isThousandSeparatorDisabled));
+        }
+        static function format(i, numDecimals, isFixedNumDecimalsForced, isDecimalSeparatorComma, isThousandSeparatorDisabled) {
+            if (isNaN(numDecimals)) {
+                numDecimals = 2;
+            }
+            var _local1 = "";
+            if (i < 0) {
+                var _local5 = String(-i).split(".");
+            } else {
+                var _local5 = String(i).split(".");
+            }
+            var _local4 = _local5[0];
+            var _local3 = 0;
+            var _local2 = 0;
+            _local2 = _local4.length - 1;
+            while (_local2 > -1) {
+                if (((_local3 % 3) == 0) && (_local1.length > 0)) {
+                    _local1 = "," + _local1;
+                    _local3 = 0;
+                }
+                _local3++;
+                _local1 = _local4.substr(_local2, 1) + _local1;
+                _local2--;
+            }
+            if (_local5[1] != undefined) {
+                if (isFixedNumDecimalsForced) {
+                    _local5[1] = _local5[1] + "0000000000000000";
+                }
+                _local1 = _local1 + ("." + _local5[1].substr(0, numDecimals));
+            } else if (isFixedNumDecimalsForced && (numDecimals > 0)) {
+                _local5[1] = "0000000000000000";
+                _local1 = _local1 + ("." + _local5[1].substr(0, numDecimals));
+            }
+            if (i < 0) {
+                _local1 = "-" + _local1;
+            }
+            if (isThousandSeparatorDisabled) {
+                _local1 = _local1.replace(",", "");
+            }
+            if (isDecimalSeparatorComma) {
+                _local1 = toDecimalSeperatorComma(_local1);
+            }
+            return(_local1);
+        }
+        static function toDecimalSeperatorComma(value) {
+            return(value.replace(".", "|").replace(",", ".").replace("|", ","));
+        }
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 7 MovieClip [__Packages.Parser] Frame 0
+//----------------------------------------------------------------------
+    class Parser
+    {
+        function Parser () {
+        }
+        static function isEmptyValue(value) {
+            if ((value == undefined) || (value == null)) {
+                return(true);
+            }
+            return(false);
+        }
+        static function getStringValue(value, defaultValue, isEmptyStringValid) {
+            if (isEmptyValue(defaultValue)) {
+                defaultValue = "";
+            }
+            if (isEmptyValue(value)) {
+                return(defaultValue);
+            }
+            if ((!isEmptyStringValid) && (value.length == 0)) {
+                return(defaultValue);
+            }
+            return(String(value));
+        }
+        static function getNumberValue(value, defaultValue, isZeroValueValid, isNegativeValueValid) {
+            if (isEmptyValue(defaultValue) || (isNaN(defaultValue))) {
+                defaultValue = 0;
+            }
+            if (isEmptyValue(value)) {
+                return(defaultValue);
+            }
+            var _local2 = Number(value);
+            if (isNaN(_local2)) {
+                return(defaultValue);
+            }
+            if ((!isZeroValueValid) && (_local2 == 0)) {
+                return(defaultValue);
+            }
+            if ((!isNegativeValueValid) && (_local2 < 0)) {
+                return(defaultValue);
+            }
+            return(_local2);
+        }
+        static function getBooleanValue(value, defaultValue) {
+            if (isEmptyValue(value)) {
+                return(defaultValue);
+            }
+            var _local2 = Number(value);
+            if (!isNaN(_local2)) {
+                if (_local2 == 0) {
+                    return(false);
+                }
+                return(true);
+            }
+            var _local1 = getStringValue(value, "false", false);
+            _local1 = _local1.toLowerCase();
+            if (_local1.indexOf("true") != -1) {
+                return(true);
+            }
+            return(false);
+        }
+        static function runTests() {
+            var _local1;
+            trace("testing Parser.getStringValue...");
+            trace(("1) stringOK  '" + getStringValue("stringOK", "myDefault", true)) + "'");
+            trace(("2) ''        '" + getStringValue("", "myDefault", true)) + "'");
+            trace(("3) myDefault '" + getStringValue("", "myDefault", false)) + "'");
+            trace(("4) ''        '" + getStringValue(_local1)) + "'");
+            trace(("5) 999       '" + getStringValue(999)) + "'");
+            trace("testing Parser.getNumberValue...");
+            trace(("01) 999       '" + getNumberValue(999, 22222222, true, true)) + "'");
+            trace(("02) 999       '" + getNumberValue("999", 22222222, true, true)) + "'");
+            trace(("03) 999       '" + getNumberValue("999")) + "'");
+            trace(("04) 0         '" + getNumberValue("abc")) + "'");
+            trace(("05) -1        '" + getNumberValue("abc", -1)) + "'");
+            trace(("06) -1        '" + getNumberValue("abc", -1, false, false)) + "'");
+            trace(("07) -1        '" + getNumberValue(null, -1, false, false)) + "'");
+            trace(("08) 22222222  '" + getNumberValue(0, 22222222)) + "'");
+            trace(("09) 0         '" + getNumberValue(0, 22222222, true)) + "'");
+            trace(("10) 22222222  '" + getNumberValue(0, 22222222, false)) + "'");
+            trace(("11) 22222222  '" + getNumberValue(0, 22222222, false, false)) + "'");
+            trace(("12) 22222222  '" + getNumberValue(-0.1, 22222222, false, false)) + "'");
+            trace(("13) -0.1      '" + getNumberValue(-0.1, 22222222, false, true)) + "'");
+            trace(("13) 22222222  '" + getNumberValue("-0.1x", 22222222, false, true)) + "'");
+            trace("testing Parser.getBooleanValue...");
+            trace(("true       '" + getBooleanValue("1", false)) + "'");
+            trace(("true       '" + getBooleanValue("-1", false)) + "'");
+            trace(("false      '" + getBooleanValue("0.000", false)) + "'");
+            trace(("false      '" + getBooleanValue("", false)) + "'");
+            trace(("true       '" + getBooleanValue("", true)) + "'");
+            trace(("false      '" + getBooleanValue("false", false)) + "'");
+            trace(("false      '" + getBooleanValue("xxx", false)) + "'");
+            trace(("true      '" + getBooleanValue("true", true)) + "'");
+            trace(("true      '" + getBooleanValue("TRUE", true)) + "'");
+            trace(("true      '" + getBooleanValue(" TRUE ", true)) + "'");
+        }
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 12 MovieClip [__Packages.Square] Frame 0
+//----------------------------------------------------------------------
+    class Square
+    {
+        function Square (left, top, right, bottom) {
+            this.top = top;
+            this.left = left;
+            this.right = right;
+            this.bottom = bottom;
+            width = right - left;
+            height = bottom - top;
+        }
+        var top = 0;
+        var left = 0;
+        var right = 0;
+        var bottom = 0;
+        var width = 0;
+        var height = 0;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 46 MovieClip [__Packages.Tooltip] Frame 0
+//----------------------------------------------------------------------
+    class Tooltip
+    {
+        var mc, x, y;
+        function Tooltip () {
+            mc = _root.createEmptyMovieClip("tooltipX", _root.getNextHighestDepth());
+            mc.rect2(0, 0, 10, 10, 0, 50);
+            mc._visible = false;
+            mc.createTextField("txt_title", mc.getNextHighestDepth(), 5, 5, 100, 100);
+            mc.createTextField("txt", mc.getNextHighestDepth(), 5, 5, 100, 100);
+            var _local3 = new flash.filters.DropShadowFilter();
+            _local3.blurX = 4;
+            _local3.blurY = 4;
+            _local3.distance = 4;
+            _local3.angle = 45;
+            _local3.quality = 2;
+            _local3.alpha = 0.5;
+            mc.filters = [_local3];
+            mc._alpha_original = 100;
+            mc._hide = function () {
+                trace(typeof(this));
+                ChartUtil.FadeOut(this);
+            };
+        }
+        function draw(p) {
+            var _local2 = p.get_tip_pos();
+            if ((mc._visible && (x == _local2.x)) && (y == _local2.y)) {
+                return(undefined);
+            }
+            x = _local2.x;
+            y = _local2.y;
+            mc.clear();
+            var _local9 = mc._x;
+            var _local8 = mc._y;
+            mc._x = _local2.x;
+            mc._y = _local2.y - 20;
+            var _local5 = p.tooltip.split("<br>");
+            if (_local5.length > 1) {
+                mc.txt_title.text = _local5.shift();
+            } else {
+                mc.txt_title.text = "";
+            }
+            var _local3 = new TextFormat();
+            _local3.color = 240;
+            _local3.font = "Verdana";
+            _local3.bold = true;
+            _local3.size = 12;
+            _local3.align = "right";
+            mc.txt_title.setTextFormat(_local3);
+            mc.txt_title.autoSize = "left";
+            mc.txt._y = mc.txt_title._height;
+            mc.txt.text = _local5.join(newline);
+            var _local4 = new TextFormat();
+            _local4.color = 0;
+            _local4.font = "Verdana";
+            _local4.size = 12;
+            _local4.align = "left";
+            mc.txt.setTextFormat(_local4);
+            mc.txt.autoSize = "left";
+            var _local7 = Math.max(mc.txt_title._width, mc.txt._width);
+            var _local6 = (mc._y - mc.txt_title._height) - mc.txt._height;
+            if (_local6 < 0) {
+                _local6 = (mc._y + mc.txt_title._height) + mc.txt._height;
+            }
+            var _local10 = {width:2, color:8421504, alpha:100};
+            var _local11 = {color:15790320, alpha:100};
+            ChartUtil.rrectangle(mc, _local7 + 10, (mc.txt_title._height + mc.txt._height) + 5, 6, ((((x + _local7) + 16) > Stage.width) ? ((Stage.width - _local7) - 16) : (x)), _local6, _local10, _local11);
+            mc._visible = true;
+            var _local13 = new mx.transitions.Tween(mc, "_x", mx.transitions.easing.Strong.easeOut, _local9, mc._x, 10, false);
+            var _local12 = new mx.transitions.Tween(mc, "_y", mx.transitions.easing.Strong.easeOut, _local8, mc._y, 10, false);
+        }
+        function hide() {
+            var _local2 = new mx.transitions.Tween(mc, "_alpha", mx.transitions.easing.Regular.easeOut, 100, 0, 20, false);
+            var tmp = this;
+            _local2.onMotionFinished = function () {
+                tmp.mc._visible = false;
+                tmp.mc._alpha = 100;
+            };
+        }
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 13 MovieClip [__Packages.ChartUtil] Frame 0
+//----------------------------------------------------------------------
+    class ChartUtil
+    {
+        function ChartUtil () {
+        }
+        static function get_colour(col) {
+            if (col.substr(0, 2) == "0x") {
+                return(Number(col));
+            }
+            if (col.substr(0, 1) == "#") {
+                return(Number("0x" + col.substr(1, col.length)));
+            }
+            if ((col.length = 6)) {
+                return(Number("0x" + col));
+            }
+            return(Number(col));
+        }
+        static function FadeIn(mc, tooltip_follow) {
+            mc.onEnterFrame = function () {
+                _root.show_tip(mc, mc.val.left, ((mc.val.bar_bottom < mc.val.y) ? (mc.val.bar_bottom) : (mc.val.y)) - 20, mc.tooltip);
+                if (tooltip_follow) {
+                    _root.tooltip._x = _root._xmouse + 5;
+                    if ((_root.tooltip._x + _root.tooltip._width) > Stage.width) {
+                        _root.tooltip._x = Stage.width - _root.tooltip._width;
+                    }
+                    _root.tooltip._y = (_root._ymouse - _root.tooltip._height) - 20;
+                    if (_root.tooltip._y < 0) {
+                        _root.tooltip._y = 0;
+                    }
+                }
+                if (mc._alpha < 100) {
+                    mc._alpha = mc._alpha + 10;
+                } else {
+                    mc._alpha = 100;
+                }
+            };
+        }
+        static function FadeOut(mc) {
+            mc.onEnterFrame = function () {
+                if ((mc._alpha - 5) > mc._alpha_original) {
+                    mc._alpha = mc._alpha - 5;
+                } else {
+                    mc._alpha = mc._alpha_original;
+                    _root.hide_tip(mc);
+                    delete mc.onEnterFrame;
+                }
+            };
+        }
+        static function Lighten(col) {
+            var _local4 = col;
+            var _local1 = (_local4 & 16711680) >> 16;
+            var _local3 = (_local4 & 65280) >> 8;
+            var _local2 = _local4 & 255;
+            var _local5 = 2;
+            _local1 = _local1 + (_local1 / _local5);
+            if (_local1 > 255) {
+                _local1 = 255;
+            }
+            _local3 = _local3 + (_local3 / _local5);
+            if (_local3 > 255) {
+                _local3 = 255;
+            }
+            _local2 = _local2 + (_local2 / _local5);
+            if (_local2 > 255) {
+                _local2 = 255;
+            }
+            return(((_local1 << 16) | (_local3 << 8)) | _local2);
+        }
+        static function rrectangle(mc, w, h, rad, x, y, stroke, fill) {
+            x = Math.round(x);
+            y = Math.round(y);
+            w = Math.round(w);
+            h = Math.round(h);
+            mc.lineStyle(stroke.width, stroke.color, stroke.alpha);
+            mc.beginFill(fill.color, fill.alpha);
+            mc.moveTo(0 + rad, 0);
+            mc.lineTo(w - rad, 0);
+            mc.curveTo(w, 0, w, rad);
+            mc.lineTo(w, h - rad);
+            mc.curveTo(w, h, w - rad, h);
+            mc.lineTo(0 + rad, h);
+            mc.curveTo(0, h, 0, h - rad);
+            mc.lineTo(0, 0 + rad);
+            mc.curveTo(0, 0, 0 + rad, 0);
+            mc.endFill();
+            mc._x = x;
+            mc._y = y;
+        }
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 31 MovieClip [__Packages.BarArrow] Frame 0
+//----------------------------------------------------------------------
+    class BarArrow extends BarStyle
+    {
+        var name, parse_bar, set_values;
+        function BarArrow (lv, name) {
+            super();
+            this.name = "bar_arrow" + name;
+            parse_bar(lv[this.name]);
+            set_values(lv["values" + name], lv["links" + name], lv["tool_tips_set" + name]);
+        }
+        function draw_bar(val, i) {
+            var _local4 = super.draw_bar(val, i);
+            _local4.lineStyle(2, 0, 100);
+            _local4.moveTo(val.x + (val.width / 2), val.bar_bottom);
+            var _local8 = Math.floor(4 + (Math.random() * 4));
+            var _local7 = (val.bar_bottom - val.y) / _local8;
+            var _local5;
+            var _local6;
+            i = 1;
+            while (i < _local8) {
+                _local5 = Math.random() * (val.width / 2);
+                _local6 = val.bar_bottom - (_local7 * i);
+                if ((i % 2) == 0) {
+                    _local5 = _local5 + val.x;
+                } else {
+                    _local5 = (val.x + val.width) - _local5;
+                }
+                _local4.lineTo(_local5, _local6);
+                i++;
+            }
+            _local4.lineTo(val.x + (val.width / 2), val.y);
+            _local4.moveTo(val.x + (val.width / 2), val.bar_bottom);
+            _local8 = 8;
+            _local7 = (val.bar_bottom - val.y) / _local8;
+            var _local19 = val.x + (val.width / 2);
+            var _local18 = val.bar_bottom;
+            i = 1;
+            while (i < _local8) {
+                _local6 = val.bar_bottom - (_local7 * i);
+                if ((i % 2) == 0) {
+                    _local5 = val.x;
+                } else {
+                    _local5 = val.x + val.width;
+                }
+                _local4.curveTo(_local5, _local6, val.x + (val.width / 2), val.bar_bottom - (_local7 * (i + 1)));
+                i++;
+            }
+            _local4.lineTo(val.x + (val.width / 2), val.y);
+            _local5 = (val.x + (val.width / 2)) - _local5;
+            _local6 = val.y - _local6;
+            var _local9 = Math.atan(_local6 / _local5) / (Math.PI/180);
+            if (_local5 < 0) {
+                _local9 = _local9 + 180;
+            }
+            if ((_local5 >= 0) && (_local6 < 0)) {
+                _local9 = _local9 + 360;
+            }
+            _local9 = _local9 + 180;
+            var _local11 = 20;
+            var _local10 = ((_local9 + 20) * Math.PI) / 180;
+            var _local17 = Math.cos(_local10);
+            var _local16 = Math.sin(_local10);
+            var _local13 = Math.cos(_local10) * _local11;
+            var _local15 = Math.sin(_local10) * _local11;
+            _local10 = ((_local9 - 20) * Math.PI) / 180;
+            _local17 = Math.cos(_local10);
+            _local16 = Math.sin(_local10);
+            var _local12 = Math.cos(_local10) * _local11;
+            var _local14 = Math.sin(_local10) * _local11;
+            _local4.lineStyle(0, 224, 100);
+            _local4.moveTo(val.x + (val.width / 2), val.y);
+            _local4.lineTo((val.x + (val.width / 2)) + _local13, val.y + _local15);
+            _local4.lineTo((val.x + (val.width / 2)) + _local12, val.y + _local14);
+            _local4.lineTo(val.x + (val.width / 2), val.y);
+            return(_local4);
+        }
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 6 MovieClip [__Packages.NumberFormat] Frame 0
+//----------------------------------------------------------------------
+    class NumberFormat
+    {
+        function NumberFormat (numDecimals, isFixedNumDecimalsForced, isDecimalSeparatorComma, isThousandSeparatorDisabled) {
+            this.numDecimals = Parser.getNumberValue(numDecimals, DEFAULT_NUM_DECIMALS, true, false);
+            this.isFixedNumDecimalsForced = Parser.getBooleanValue(isFixedNumDecimalsForced, false);
+            this.isDecimalSeparatorComma = Parser.getBooleanValue(isDecimalSeparatorComma, false);
+            this.isThousandSeparatorDisabled = Parser.getBooleanValue(isThousandSeparatorDisabled, false);
+        }
+        static function getInstance(lv) {
+            if (_instance == null) {
+                if ((lv == undefined) || (lv == null)) {
+                    lv = _root.lv;
+                }
+                _instance = new NumberFormat(lv.num_decimals, lv.is_fixed_num_decimals_forced, lv.is_decimal_separator_comma, lv.is_thousand_separator_disabled);
+            }
+            return(_instance);
+        }
+        static function getInstanceY2(lv) {
+            if (_instanceY2 == null) {
+                if ((lv == undefined) || (lv == null)) {
+                    lv = _root.lv;
+                }
+                _instanceY2 = new NumberFormat(lv.num_decimals_y2, lv.is_fixed_num_decimals_forced_y2, lv.is_decimal_separator_comma_y2, lv.is_thousand_separator_disabled_y2);
+            }
+            return(_instanceY2);
+        }
+        static var DEFAULT_NUM_DECIMALS = 2;
+        var numDecimals = DEFAULT_NUM_DECIMALS;
+        var isFixedNumDecimalsForced = false;
+        var isDecimalSeparatorComma = false;
+        var isThousandSeparatorDisabled = false;
+        static var _instance = null;
+        static var _instanceY2 = null;
+    }
+﻿
+//----------------------------------------------------------------------
+//Symbol 4 MovieClip [__Packages.Point] Frame 0
+//----------------------------------------------------------------------
+    class Point
+    {
+        var x, y, is_tip, tooltip;
+        function Point (x, y) {
+            this.x = x;
+            this.y = y;
+            is_tip = false;
+        }
+        function make_tooltip(tip, key, val, x_legend, x_axis_label, tip_set) {
+            var _local3;
+            var _local9 = {x_label:tooltip, value:"-99", key:"moo"};
+            if (_root.tool_tip_wrapper != undefined) {
+                _local3 = tip.replace("#val#", _root.format(val));
+                _local3 = _local3.replace("#val:number#", NumberUtils.formatNumber(Number(val)));
+                _local3 = _local3.replace("#key#", key);
+                _local3 = _local3.replace("#x_label#", x_axis_label);
+                _local3 = _local3.replace("#val:time#", _root.formatTime(val));
+                _local3 = _local3.replace("#x_legend#", x_legend);
+                if (tip_set != undefined) {
+                    _local3 = _local3.replace("#set#", tip_set);
+                }
+            } else if (x_axis_label.length == 0) {
+                _local3 = _root.format(val);
+            } else {
+                _local3 = (x_axis_label + "<br>") + _root.format(val);
+            }
+            tooltip = _local3;
+        }
+        function get_tip_pos() {
+            return({x:x, y:y});
+        }
+        function toString() {
+            return("x :" + x);
+        }
+    }
