@@ -1,3 +1,0 @@
-UPGRADE INSTRUCTIONS
-
-To upgrade from a previous version of Rotatee, just replace all the old files with the new ones, EXCEPT "config.php". Make sure you make a backup before replacing.
