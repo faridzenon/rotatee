@@ -1,5 +1,0 @@
-HOW TO INSTALL ROTATE :
-It is a really simple process. 
- - Just prepare your database details and point your browser to http://path-to-rotatee/install.php
- - Fill in the details and press "Install Rotatee"..
- - Voila.. Rotatee is installed..
